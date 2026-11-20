@@ -1,0 +1,6 @@
+# Reverse proxy in front of Django (Doc 1, section 2). On the droplet set API_DOMAIN=api.<domain>;
+# Caddy gets and renews the HTTPS certificate automatically.
+{$API_DOMAIN:localhost} {
+	encode gzip
+	reverse_proxy api:8000
+}

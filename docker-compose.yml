@@ -1,0 +1,66 @@
+# Local development stack. `docker compose up` starts db, redis and api.
+# `docker compose --profile workers up` also starts Celery (after task B1 creates config/celery.py).
+# `docker compose --profile proxy up` adds Caddy in front, as on the DigitalOcean droplet.
+services:
+  db:
+    image: postgis/postgis:16-3.4
+    environment:
+      POSTGRES_DB: landchain
+      POSTGRES_USER: landchain
+      POSTGRES_PASSWORD: landchain
+    ports: ["5432:5432"]
+    volumes: [db_data:/var/lib/postgresql/data]
+
+  redis:
+    image: redis:7-alpine
+    ports: ["6379:6379"]
+
+  api:
+    build: .
+    command: python manage.py runserver 0.0.0.0:8000
+    env_file: .env
+    environment:
+      DATABASE_URL: ${DATABASE_URL:-postgres://landchain:landchain@db:5432/landchain}
+      REDIS_URL: redis://redis:6379/0
+    volumes: [".:/app"]
+    ports: ["8000:8000"]
+    extra_hosts: ["host.docker.internal:host-gateway"]   # reach Ganache on your machine (port 7545)
+    depends_on: [db, redis]
+
+  worker:
+    profiles: ["workers"]
+    build: .
+    command: celery -A config worker -l info -Q default,signer.registrar,signer.id_officer,signer.admin
+    env_file: .env
+    environment:
+      DATABASE_URL: ${DATABASE_URL:-postgres://landchain:landchain@db:5432/landchain}
+      REDIS_URL: redis://redis:6379/0
+    volumes: [".:/app"]
+    extra_hosts: ["host.docker.internal:host-gateway"]
+    depends_on: [db, redis]
+
+  beat:
+    profiles: ["workers"]
+    build: .
+    command: celery -A config beat -l info
+    env_file: .env
+    environment:
+      DATABASE_URL: ${DATABASE_URL:-postgres://landchain:landchain@db:5432/landchain}
+      REDIS_URL: redis://redis:6379/0
+    volumes: [".:/app"]
+    depends_on: [redis]
+
+  caddy:
+    profiles: ["proxy"]
+    image: caddy:2-alpine
+    ports: ["80:80", "443:443"]
+    environment:
+      API_DOMAIN: ${API_DOMAIN:-localhost}
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+    depends_on: [api]
+
+volumes:
+  db_data:
+  caddy_data:

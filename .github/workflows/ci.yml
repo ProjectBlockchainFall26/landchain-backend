@@ -1,0 +1,41 @@
+name: CI
+
+on:
+  pull_request:
+    branches: [main, production]
+  push:
+    branches: [main]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    services:
+      db:
+        image: postgis/postgis:16-3.4
+        env:
+          POSTGRES_DB: landchain
+          POSTGRES_USER: landchain
+          POSTGRES_PASSWORD: landchain
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd "pg_isready -U landchain" --health-interval 5s --health-timeout 5s --health-retries 10
+    env:
+      DATABASE_URL: postgres://landchain:landchain@localhost:5432/landchain
+      DJANGO_SECRET_KEY: ci-only
+      DJANGO_DEBUG: "false"
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+      - name: System libraries for GeoDjango
+        run: sudo apt-get update && sudo apt-get install -y gdal-bin libgdal-dev
+      - run: pip install -r requirements-dev.txt
+      - name: Create schema
+        run: PGPASSWORD=landchain psql -h localhost -U landchain -d landchain -c "create schema if not exists landchain;"
+      - run: ruff check .
+      - run: python manage.py check
+      - run: python manage.py makemigrations --check --dry-run
+      - run: pytest -q
+      # TODO(D1): run the Postman collection with newman against a local server

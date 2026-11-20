@@ -1,0 +1,19 @@
+# Runtime dependencies (spec section 15). Pin exact versions once the team agrees (task J1).
+Django>=5.1,<5.3
+djangorestframework>=3.15,<3.17
+drf-spectacular>=0.27
+django-cors-headers>=4.4
+django-ratelimit>=4.1
+psycopg[binary]>=3.2
+dj-database-url>=2.2
+python-dotenv>=1.0
+PyJWT[crypto]>=2.9
+supabase>=2.7
+web3>=7,<8
+eth-account>=0.13
+celery[redis]>=5.4
+redis>=5.0
+shapely>=2.0
+pyproj>=3.6
+python-ulid>=2.7
+gunicorn>=23.0

@@ -1,0 +1,1597 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>LandChain Django API Spec</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+/* Layout idea: a register-office reference manual. Sticky contents rail on the left, one reading column, endpoint cards with method stripes. */
+:root {
+  --paper: #f6f7f4;
+  --card: #ffffff;
+  --ink: #18211c;
+  --muted: #5c675f;
+  --line: #d9ded8;
+  --accent: #1d6b45;
+  --accent-soft: #e3efe7;
+  --gold: #9a6a00;
+  --code-bg: #eef1ec;
+  --get: #1f5fa8; --post: #1d6b45; --patch: #9a6a00; --delete: #a8321f;
+  --font-display: "Archivo", "Helvetica Neue", Arial, sans-serif;
+  --font-body: "IBM Plex Sans", "Segoe UI", system-ui, sans-serif;
+  --font-mono: "IBM Plex Mono", ui-monospace, Menlo, Consolas, monospace;
+  color-scheme: light;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --paper: #121714; --card: #1a211d; --ink: #e4ebe6; --muted: #9aa69e; --line: #2d3731;
+    --accent: #5fc28f; --accent-soft: #1f3328; --gold: #e0b44f; --code-bg: #0e1310;
+    --get: #7fb2ef; --post: #5fc28f; --patch: #e0b44f; --delete: #ef8a78;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --paper: #121714; --card: #1a211d; --ink: #e4ebe6; --muted: #9aa69e; --line: #2d3731;
+  --accent: #5fc28f; --accent-soft: #1f3328; --gold: #e0b44f; --code-bg: #0e1310;
+  --get: #7fb2ef; --post: #5fc28f; --patch: #e0b44f; --delete: #ef8a78;
+  color-scheme: dark;
+}
+* { box-sizing: border-box; }
+html, body { margin: 0; }
+body { background: var(--paper); color: var(--ink); font: 15px/1.6 var(--font-body); }
+a { color: var(--accent); }
+a:focus-visible, button:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.wrap { display: grid; grid-template-columns: 260px minmax(0, 1fr); gap: 40px; max-width: 1240px; margin: 0 auto; padding: 0 24px; }
+nav.toc { position: sticky; top: 0; align-self: start; max-height: 100vh; overflow-y: auto; padding: 28px 0 40px; font-size: 13.5px; }
+nav.toc .brand { font: 700 15px var(--font-display); letter-spacing: .02em; margin-bottom: 14px; }
+nav.toc ol { list-style: none; margin: 0; padding: 0; display: grid; gap: 2px; }
+nav.toc ol ol { padding-left: 14px; margin: 2px 0 6px; }
+nav.toc a { color: var(--muted); text-decoration: none; display: block; padding: 2px 6px; border-radius: 4px; }
+nav.toc a:hover { color: var(--ink); background: var(--accent-soft); }
+main { padding: 28px 0 80px; min-width: 0; max-width: 900px; }
+header.top { border-bottom: 1px solid var(--line); padding-bottom: 20px; margin-bottom: 8px; }
+.eyebrow { font: 500 12px var(--font-mono); color: var(--gold); letter-spacing: .06em; text-transform: uppercase; }
+h1, h2, h3, h4 { font-family: var(--font-display); text-wrap: balance; line-height: 1.25; }
+h1 { font-size: 34px; margin: 6px 0 10px; }
+h2 { font-size: 25px; margin: 56px 0 12px; padding-top: 12px; border-top: 2px solid var(--ink); }
+h3 { font-size: 19px; margin: 34px 0 8px; }
+h4 { font-size: 15.5px; margin: 22px 0 6px; }
+h5 { font: 600 12px var(--font-mono); text-transform: uppercase; letter-spacing: .05em; color: var(--muted); margin: 14px 0 4px; }
+p, li { max-width: 72ch; }
+code { font: 13px var(--font-mono); background: var(--code-bg); padding: 1px 5px; border-radius: 4px; }
+pre { font: 12.5px/1.55 var(--font-mono); background: var(--code-bg); border: 1px solid var(--line); border-radius: 6px; padding: 12px 14px; overflow-x: auto; margin: 6px 0 10px; }
+pre code { background: none; padding: 0; font-size: inherit; }
+.tbl { overflow-x: auto; margin: 8px 0 14px; }
+table { border-collapse: collapse; width: 100%; font-size: 13.5px; font-variant-numeric: tabular-nums; }
+th, td { text-align: left; vertical-align: top; padding: 7px 10px; border-bottom: 1px solid var(--line); }
+th { font-weight: 600; background: var(--card); border-bottom: 2px solid var(--line); }
+td code { font-size: 12px; }
+.note { border-left: 3px solid var(--gold); background: var(--card); padding: 10px 14px; margin: 12px 0; border-radius: 0 6px 6px 0; }
+.note.key { border-left-color: var(--accent); }
+.ep { background: var(--card); border: 1px solid var(--line); border-left: 4px solid var(--line); border-radius: 6px; padding: 14px 18px 8px; margin: 16px 0; }
+.ep.get { border-left-color: var(--get); } .ep.post { border-left-color: var(--post); } .ep.patch { border-left-color: var(--patch); } .ep.delete { border-left-color: var(--delete); }
+.ep-head { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px; }
+.ep-head .path { font: 600 14px var(--font-mono); word-break: break-all; }
+.m { font: 700 11.5px var(--font-mono); padding: 2px 7px; border-radius: 4px; color: var(--card); }
+.m.get { background: var(--get); } .m.post { background: var(--post); } .m.patch { background: var(--patch); } .m.delete { background: var(--delete); }
+.chip { font: 500 11.5px var(--font-mono); border: 1px solid var(--line); border-radius: 999px; padding: 1px 9px; color: var(--muted); }
+.chip.chain { border-color: var(--gold); color: var(--gold); }
+.ep p { margin: 8px 0; }
+.copybar { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 14px; }
+button.copy { font: 500 13px var(--font-body); background: var(--accent); color: var(--card); border: 0; border-radius: 6px; padding: 7px 14px; cursor: pointer; }
+.meta { color: var(--muted); font-size: 13.5px; }
+@media (max-width: 900px) { .wrap { grid-template-columns: 1fr; gap: 0; padding: 0 16px; } nav.toc { position: static; max-height: none; border-bottom: 1px solid var(--line); } }
+@media (prefers-reduced-motion: reduce) { * { scroll-behavior: auto !important; } }
+@media (prefers-reduced-motion: no-preference) { html { scroll-behavior: smooth; } }
+</style>
+</head>
+<body>
+<div class="wrap">
+<nav class="toc" aria-label="Contents">
+  <div class="brand">LandChain · Backend spec</div>
+  <ol>
+    <li><a href="#overview">1. What the backend does</a></li>
+    <li><a href="#architecture">2. Architecture</a></li>
+    <li><a href="#features">3. Feature inventory (from the UI)</a></li>
+    <li><a href="#conventions">4. API conventions</a></li>
+    <li><a href="#auth">5. Auth with Supabase</a>
+      <ol><li><a href="#auth-jwt">JWT verification</a></li><li><a href="#auth-wallet">Wallet linking (SIWE)</a></li><li><a href="#auth-roles">Roles &amp; permissions</a></li><li><a href="#auth-supabase-setup">Supabase project setup</a></li></ol></li>
+    <li><a href="#chain">6. Blockchain integration</a>
+      <ol><li><a href="#chain-contracts">Contracts</a></li><li><a href="#chain-signing">Who signs</a></li><li><a href="#chain-intents">Transaction intents</a></li><li><a href="#chain-encoding">Encoding rules</a></li><li><a href="#chain-indexer">Event indexer</a></li></ol></li>
+    <li><a href="#models">7. Data model</a></li>
+    <li><a href="#schemas">8. Shared JSON objects</a></li>
+    <li><a href="#endpoints">9. Endpoints</a>
+      <ol>
+        <li><a href="#ep-system">System &amp; config</a></li>
+        <li><a href="#ep-me">Me, wallet, notifications</a></li>
+        <li><a href="#ep-identity">Identity</a></li>
+        <li><a href="#ep-documents">Documents vault</a></li>
+        <li><a href="#ep-parcels">Parcels &amp; map</a></li>
+        <li><a href="#ep-applications">Applications</a></li>
+        <li><a href="#ep-fees">Fees &amp; payments</a></li>
+        <li><a href="#ep-transfers">Transfers</a></li>
+        <li><a href="#ep-intents">Chain intents</a></li>
+        <li><a href="#ep-review">Review queue</a></li>
+        <li><a href="#ep-enquiries">Enquiries</a></li>
+        <li><a href="#ep-activity">Activity &amp; receipt</a></li>
+        <li><a href="#ep-admin">Admin</a></li>
+      </ol></li>
+    <li><a href="#errors">10. Errors &amp; revert catalog</a></li>
+    <li><a href="#privacy">11. Privacy rules</a></li>
+    <li><a href="#notifications">12. Notifications catalog</a></li>
+    <li><a href="#jobs">13. Background jobs</a></li>
+    <li><a href="#settings">14. Settings &amp; env vars</a></li>
+    <li><a href="#layout">15. Django project layout</a></li>
+    <li><a href="#migration">16. Frontend migration map</a></li>
+    <li><a href="#tests">17. Seed data &amp; tests</a></li>
+    <li><a href="#decisions">18. Open decisions</a></li>
+  </ol>
+</nav>
+<main id="spec">
+<header class="top">
+  <div class="eyebrow">LandChain Ghana · Django REST backend · API v1</div>
+  <h1>LandChain Django API Spec</h1>
+  <p>Full specification for the Django backend behind the <code>landchain-web</code> UI and the <code>landchain-contracts</code> Solidity contracts. It covers every feature the current web app has, the request and response body of every endpoint, Supabase authentication, and how the API talks to the blockchain. I derived it from the code at <code>landchain-web@ce033f8</code> (<code>src/lib/landchain/*</code>, every route) and the four contracts in <code>landchain-contracts/contracts</code>. It is written so another engineer or an AI agent can build the backend from this page alone.</p>
+  <p class="meta">Generated 20 Nov 2026. Stack assumed: Django 5.1 + Django REST Framework, Supabase (Auth, Postgres with PostGIS, Storage), web3.py v7, Celery + Redis, Ganache (chain id 1337) locally and Sepolia (11155111) later.</p>
+  <div class="copybar"><button class="copy" id="copy-all" type="button">Copy the whole spec as text</button><span class="meta" id="copy-status" aria-live="polite"></span></div>
+</header>
+
+<h2 id="overview">1. What the backend does</h2>
+<p>Today the web app has no backend. It reads the contracts straight from the browser (scanning every event every 3 seconds), signs with MetaMask or Ganache's unlocked accounts, and keeps all off-chain data in the browser: names in <code>localStorage</code>, document files in IndexedDB (<code>vault.ts</code>), enquiries in <code>localStorage</code> (<code>enquiries.ts</code>), and reverted calls in <code>localStorage</code>. The backend replaces all of that and becomes the only thing the UI talks to.</p>
+<p>It has six jobs:</p>
+<ol>
+  <li><b>Authentication and accounts.</b> Supabase Auth signs people in. Django verifies the Supabase JWT on every request, keeps a profile per user (name, contact, linked wallet, roles) and links one wallet per person with a signed message (Sign-In with Ethereum).</li>
+  <li><b>All blockchain interaction through the API.</b> Reads come from Django's own Postgres index of the chain. Writes go through the API: officer actions are signed by role wallets the backend holds; citizen actions are prepared by the API as unsigned transactions, signed in the citizen's wallet, and tracked by the API until they are mined.</li>
+  <li><b>Event indexer.</b> A worker follows the four contracts' events from the deployment's <code>startBlock</code> into Postgres, so the UI stops scanning the chain. It builds parcels, applications, transfers, payments, history, the activity log and notifications.</li>
+  <li><b>Document vault.</b> Files (site plan, indenture, search report, consent) go to a private Supabase Storage bucket keyed by their SHA-256 fingerprint. Only Lands Commission officers and the parcel's owners can open them. Anyone can check a copy against the on-chain fingerprint.</li>
+  <li><b>Enquiry inbox.</b> A visitor sends a message about a parcel; the backend relays it to the owner by email or SMS without revealing who the owner is.</li>
+  <li><b>Privacy enforcement.</b> The rules in <code>privacy.ts</code> move to the server. The API never returns a name, document, fee or contact detail to someone who may not see it.</li>
+</ol>
+<div class="note key"><b>The contracts stay the source of truth.</b> Every business rule is a <code>require</code> in Solidity. The backend pre-checks the same rules so it can answer quickly with a clear message, and it simulates every transaction with <code>eth_call</code> before sending, so a refusal comes back with the contract's own sentence and no gas is spent. Never put a rule only in Django that the contract does not also enforce, and never put personal data on chain (no names, file names, card numbers, phone numbers, emails).</div>
+<p><b>Out of scope</b> (cut on 19 Nov 2026, keep them out unless the team decides otherwise): marketplace, escrow, test cedis, disputes, surveyor/lawyer/judge roles, subdivision, leases, mortgages, inheritance, key recovery.</p>
+
+<h2 id="architecture">2. Architecture</h2>
+<pre><code>  Browser (TanStack Start app)
+   │  supabase-js: sign in, refresh token ─────────────► Supabase Auth
+   │  fetch /api/v1/*  Authorization: Bearer &lt;Supabase access token&gt;
+   │  MetaMask: eth_sendTransaction(tx prepared by the API)  ──────────┐
+   ▼                                                                    │
+  Django + DRF  (api.landchain…)                                        │
+   ├─ auth: verifies Supabase JWT (JWKS), loads Profile                 │
+   ├─ apps: accounts · identity · parcels · applications · fees ·       │
+   │        transfers · documents · enquiries · notifications · chain   │
+   ├─ web3.py ── eth_call / estimateGas / build tx ──────────────────► RPC (Ganache :7545 / Sepolia)
+   │                                                                    ▲
+   ├─ Supabase Postgres (+PostGIS)  schema "landchain"                  │
+   ├─ Supabase Storage  bucket "parcel-documents" (private)             │
+   └─ Redis ◄─► Celery workers                                          │
+        ├─ indexer      follows contract events → Postgres ─────────────┤
+        ├─ signer       one queue per role wallet, signs + sends ───────┤
+        ├─ tx-watcher   receipts for citizen-submitted hashes ──────────┘
+        └─ notifier     email / SMS relay (enquiries, decisions)</code></pre>
+<div class="tbl"><table>
+<thead><tr><th>Piece</th><th>Choice</th><th>Why</th></tr></thead>
+<tbody>
+<tr><td>Web framework</td><td>Django 5.1, DRF 3.15, drf-spectacular for OpenAPI</td><td>Team doc (Doc 1) names Django. OpenAPI schema at <code>/api/v1/schema/</code> lets the frontend generate types.</td></tr>
+<tr><td>Auth</td><td>Supabase Auth (email + password, magic link, phone OTP). Django only verifies tokens.</td><td>No password handling in Django. Same token works for Supabase Storage and Realtime if needed.</td></tr>
+<tr><td>Database</td><td>Supabase Postgres, PostGIS extension enabled, Django tables in a non-exposed schema <code>landchain</code></td><td>PostGIS does the boundary overlap check (PROJECT_CONTEXT P2 item). A separate schema keeps tables away from Supabase's auto-generated PostgREST API.</td></tr>
+<tr><td>Files</td><td>Supabase Storage private bucket, accessed with the service-role key from Django only</td><td>Replaces IndexedDB vault. Signed URLs expire in 60 seconds.</td></tr>
+<tr><td>Chain library</td><td>web3.py 7.x, eth-account</td><td>Python equivalent of web3.js v4 used by the frontend. ABIs come from <code>landchain-contracts/shared/abi/*.json</code>.</td></tr>
+<tr><td>Jobs</td><td>Celery 5 + Redis (or Supabase-hosted Redis alternative such as Upstash)</td><td>Indexer loop, serialized signing per role wallet, notification relay.</td></tr>
+<tr><td>Geometry</td><td>PostGIS + shapely + pyproj</td><td>Area in acres and overlap checks on the server.</td></tr>
+</tbody></table></div>
+
+<h2 id="features">3. Feature inventory (from the UI)</h2>
+<p>Every screen in <code>src/routes</code> and what it needs from the backend. The endpoint names link to section 9.</p>
+<div class="tbl"><table>
+<thead><tr><th>Screen (route)</th><th>Who</th><th>What it does today</th><th>Endpoints it will use</th></tr></thead>
+<tbody>
+<tr><td>Sign in (<code>/login</code>)</td><td>Everyone</td><td>Connect MetaMask, or pick a seeded Ganache demo account, or continue as public visitor</td><td>Supabase sign-in; <code>GET /me</code>; <code>POST /auth/wallet/nonce</code>, <code>POST /auth/wallet/verify</code>; <code>GET /dev/demo-accounts</code> (local only)</td></tr>
+<tr><td>Land Map (<code>/</code>)</td><td>Everyone</td><td>Map of all non-rejected parcels, status filters, search by parcel ID / owner public ID / token #, selected-parcel card, "Register snapshot" stats</td><td><code>GET /parcels?format=geojson</code>, <code>GET /parcels/search</code>, <code>GET /stats</code></td></tr>
+<tr><td>Identity (<code>/identity</code>)</td><td>Citizen</td><td>Enter name (kept off chain) and Ghana Card number (hashed in browser), choose citizen / non-citizen, submit to <code>IdentityRegistry.submitProfile</code></td><td><code>PATCH /me</code>, <code>POST /identity/submit</code> (prepare), <code>GET /me</code></td></tr>
+<tr><td>Register Land (<code>/register</code>)</td><td>Verified citizen</td><td>Draw boundary (≥3 pillars), live area + plots count + overlap check, parcel ID (suggested next id), interest, allodial holder, region, plan number, GhanaPostGPS, upload 3 required + 1 optional documents (SHA-256), submit application</td><td><code>GET /parcels/next-id</code>, <code>POST /parcels/boundary-check</code>, <code>POST /documents</code>, <code>POST /applications</code> (prepare), <code>GET /chain/intents/{id}</code></td></tr>
+<tr><td>My Parcels (<code>/parcels</code>)</td><td>Citizen</td><td>Parcels currently owned, total acres, title view per parcel</td><td><code>GET /me/parcels</code>, <code>GET /parcels/{parcel_id}</code></td></tr>
+<tr><td>Title record (<code>/title/$parcelId</code>)</td><td>Everyone (privacy-filtered)</td><td>Status banner; Registration (application decision, plan no., GPS, interest); Ownership (current owner, owner history, open transfer, Transfer / Cancel buttons, Enquire); Documents (open file, check a copy); Fees; Enquiries inbox (owner); On-chain history; GPS boundary in DMS; Smart contract record ids</td><td><code>GET /parcels/{id}</code>, <code>GET /parcels/{id}/history</code>, <code>GET /documents/{sha256}/url</code>, <code>POST /parcels/{id}/documents/check</code>, <code>GET /parcels/{id}/payments</code>, <code>GET /me/enquiries?parcel_id=</code>, <code>POST /parcels/{id}/enquiries</code>, <code>GET /identities/lookup</code>, <code>POST /transfers</code>, <code>POST /transfers/{id}/cancel</code></td></tr>
+<tr><td>Receipt (<code>/receipt/$parcelId</code>)</td><td>Owner, officers</td><td>Statement of costs: official fees in cedis + gas used × gas price for every transaction on the parcel, owner-signed share, printable</td><td><code>GET /parcels/{id}/receipt</code></td></tr>
+<tr><td>Review Queue (<code>/review</code>)</td><td>Officers</td><td>Identity requests (identity officer: verify / reject); Land registrations (registrar: open documents, record fees, approve / reject with reason); Ownership transfers (registrar: record transfer fee, approve / reject)</td><td><code>GET /review/queue</code>, <code>POST /identities/{public_id}/verify|reject</code>, <code>POST /parcels/{id}/payments</code>, <code>POST /applications/{id}/approve|reject</code>, <code>POST /transfers/{id}/approve|reject</code></td></tr>
+<tr><td>Verify (<code>/verify</code>)</td><td>Public</td><td>Look up a title by parcel ID; table of all registered titles with status, owner public ID, size, owners-so-far count</td><td><code>GET /parcels?status=registered,transfer_pending,pending</code>, <code>GET /parcels/{id}</code></td></tr>
+<tr><td>Activity Log (<code>/activity</code>)</td><td>Everyone</td><td>Every contract call including reverted ones; filter by parcel, person, contract, status</td><td><code>GET /activity</code></td></tr>
+<tr><td>Assumptions (<code>/assumptions</code>)</td><td>Everyone</td><td>Static list of 12 assumptions</td><td>None (static). Optional <code>GET /config</code> for chain name.</td></tr>
+<tr><td>Shell: account menu, notifications bell, chain status</td><td>Signed in</td><td>Switch demo account, connect MetaMask, notifications for me and my role, chain error banner, pending-count badge</td><td><code>GET /me/notifications</code>, <code>POST /me/notifications/read</code>, <code>GET /chain/status</code>, <code>GET /review/counts</code></td></tr>
+</tbody></table></div>
+
+<h2 id="conventions">4. API conventions</h2>
+<ul>
+  <li><b>Base URL:</b> <code>{API_URL}/api/v1</code>. Frontend env var <code>VITE_API_URL</code> (e.g. <code>http://127.0.0.1:8000</code>). All paths below are relative to <code>/api/v1</code>. Trailing slashes optional (<code>APPEND_SLASH=False</code>, routers with <code>trailing_slash="/?"</code>).</li>
+  <li><b>Format:</b> JSON in and out, <code>Content-Type: application/json</code>, UTF-8. Uploads are <code>multipart/form-data</code>. Keys are <code>snake_case</code>.</li>
+  <li><b>Auth header:</b> <code>Authorization: Bearer &lt;supabase_access_token&gt;</code>. Endpoints marked <span class="chip">Public</span> work without it; with it, they return more fields when privacy allows.</li>
+  <li><b>IDs</b> keep the formats the UI already shows:
+    <ul>
+      <li>Parcel ID <code>GA-BRK-0015</code> (regex <code>^[A-Z]{2}-[A-Z]{3}-\d{4}$</code>). A rejected application frees its parcel ID, so one parcel ID may have several on-chain records; the API always resolves a parcel ID to the <b>latest</b> record. <code>record_id</code> (integer, TitleRegistry index + 1) is also returned.</li>
+      <li>Application <code>APP-{appId}</code>, transfer <code>TRF-{transferId}</code>, payment <code>PAY-{paymentId}</code>: the on-chain ids with a prefix. Path parameters accept <code>APP-7</code> or <code>7</code>.</li>
+      <li>Title number <code>GLT #{tokenId}</code>, returned as integer <code>title_no</code>.</li>
+      <li>Public ID <code>GH-7d4e894d</code>: <code>"GH-" + first 4 bytes of keccak256(address)</code>, the same as <code>IdentityRegistry.publicIdOf</code>.</li>
+      <li>Backend-only objects (intents, documents, enquiries, notifications) use prefixed ULIDs: <code>txi_01JD…</code>, <code>doc_01JD…</code>, <code>enq_01JD…</code>, <code>ntf_01JD…</code>.</li>
+    </ul></li>
+  <li><b>Timestamps:</b> ISO 8601 UTC strings (<code>"2026-11-19T13:47:15Z"</code>). The frontend currently uses epoch milliseconds; convert with <code>Date.parse</code>. Block timestamps come from the chain (seconds) and are converted.</li>
+  <li><b>Money:</b> cedis as a decimal string with 2 places, plus integer pesewas: <code>"amount_ghs": "1178.00", "amount_pesewas": 117800</code>. Never floats.</li>
+  <li><b>Area:</b> <code>"acres": "1.24"</code> (string, 2 places) and <code>"acres_x100": 124</code> as stored on chain.</li>
+  <li><b>Coordinates:</b> <code>[lat, lng]</code> arrays in decimal degrees (floats, 6 decimals). On chain they are int32 micro-degrees; the API returns both when relevant.</li>
+  <li><b>Hashes and addresses:</b> lowercase <code>0x</code>-prefixed hex. Addresses are accepted in any case and stored lowercase.</li>
+  <li><b>Pagination:</b> list endpoints take <code>?page=1&amp;page_size=50</code> (max 200) and return <code>{"count", "next", "previous", "results"}</code>. The activity log and notifications also accept <code>?before=&lt;iso&gt;</code> for infinite scroll.</li>
+  <li><b>Filtering:</b> comma-separated values for enums (<code>?status=pending,registered</code>).</li>
+  <li><b>Idempotency:</b> every <code>POST</code> that sends a transaction or records money accepts <code>Idempotency-Key: &lt;uuid&gt;</code>. Same key + same user within 24 h returns the first response instead of sending twice. The UI should send one per button click.</li>
+  <li><b>Chain freshness:</b> every read response carries headers <code>X-Chain-Id</code>, <code>X-Indexed-Block</code> and <code>X-Chain-Head</code> so the UI can show "indexed up to block N".</li>
+  <li><b>Errors:</b> one shape everywhere (section 10):
+<pre><code>{
+  "error": {
+    "code": "CHAIN_REVERT",
+    "message": "Only the owner can transfer this title",
+    "revert_reason": "Only the owner can transfer this title",
+    "field_errors": null,
+    "request_id": "req_01JD2ZQ7…"
+  }
+}</code></pre></li>
+  <li><b>Rate limits</b> (django-ratelimit, by user, or by IP when anonymous): enquiries 5/hour/IP and 20/day/IP; document check 30/min; prepare endpoints 20/min/user; wallet nonce 10/min/IP. Exceeding returns <code>429 RATE_LIMITED</code> with <code>Retry-After</code>.</li>
+  <li><b>CORS:</b> allow the frontend origins (<code>http://localhost:5173</code>, the deployed URL) with credentials off (bearer tokens, no cookies).</li>
+</ul>
+
+<h2 id="auth">5. Auth with Supabase</h2>
+<p>Supabase Auth owns sign-up, sign-in, passwords, OTPs, sessions and token refresh. Django never sees a password. The browser uses <code>@supabase/supabase-js</code>; Django checks the access token on each request and maps the Supabase user (<code>sub</code>) to a <code>Profile</code> row.</p>
+
+<h3>5.1 Identity layers</h3>
+<div class="tbl"><table>
+<thead><tr><th>Layer</th><th>What it proves</th><th>Where it lives</th></tr></thead>
+<tbody>
+<tr><td>Supabase user</td><td>This person controls this email or phone</td><td><code>auth.users</code> (Supabase), id = JWT <code>sub</code></td></tr>
+<tr><td>Linked wallet</td><td>This person controls this Ethereum address (signed a SIWE message)</td><td><code>landchain.profile.wallet_address</code>, unique</td></tr>
+<tr><td>On-chain identity</td><td>An identity officer verified the Ghana Card hash for this address</td><td><code>IdentityRegistry.profileOf(address)</code>, mirrored in <code>landchain.chain_identity</code></td></tr>
+<tr><td>Officer role</td><td>This person works for the Lands Commission as registrar / identity officer / admin</td><td><code>landchain.profile.roles</code> (source of truth), mirrored into Supabase <code>app_metadata.landchain_roles</code> so it is in the JWT</td></tr>
+</tbody></table></div>
+<p>Citizens need all of the first three to register land. Officers need a Supabase user and an officer role; they do <b>not</b> need their own wallet, because the backend signs with the role wallet (section 6.2).</p>
+
+<h3>5.2 Sign-in flows the UI should offer</h3>
+<ol>
+  <li><b>Email + password</b> or <b>email magic link</b>: <code>supabase.auth.signInWithPassword</code> / <code>signInWithOtp({ email })</code>.</li>
+  <li><b>Phone OTP</b> (Ghana numbers, e.g. <code>+233 24 000 0000</code>): <code>signInWithOtp({ phone })</code> with an SMS provider configured in Supabase (Twilio, MessageBird or Vonage).</li>
+  <li><b>Public visitor</b>: no sign-in. The UI calls public endpoints without a token.</li>
+  <li><b>Demo accounts (local chain only)</b>: the management command <code>seed_demo_users</code> creates the 8 seeded people as Supabase users (<code>ama@demo.landchain.local</code> etc., password from <code>DEMO_PASSWORD</code>) already linked to their Ganache addresses. The login page lists them from <code>GET /dev/demo-accounts</code> and signs in with password. This keeps the "no wallet needed" demo.</li>
+</ol>
+<p>After any sign-in, the UI calls <code>GET /me</code>. If <code>wallet_address</code> is null and the user is a citizen, it shows "Connect your wallet" and runs the SIWE flow (5.4).</p>
+<div class="note">Supabase also has native "Sign in with Web3" for Ethereum wallets. You can use it instead of the Django SIWE endpoints; then read the address from the user's <code>web3</code> identity and skip <code>/auth/wallet/*</code>. The Django flow below is recommended because it lets people sign in by email or phone first and link a wallet later, and lets officers have no wallet. Check the current Supabase docs for the claim layout before choosing it.</div>
+
+<h3 id="auth-jwt">5.3 Verifying the Supabase JWT in Django</h3>
+<p>Supabase access tokens are JWTs. Newer projects sign them with asymmetric keys published at a JWKS endpoint; older projects use a shared HS256 secret. Support both.</p>
+<div class="tbl"><table>
+<thead><tr><th>Claim</th><th>Example</th><th>Use</th></tr></thead>
+<tbody>
+<tr><td><code>sub</code></td><td><code>"8d0f6c1e-5b3a-4f7e-9a51-2c1d0e7b9f33"</code></td><td>Supabase user id → <code>Profile.supabase_user_id</code></td></tr>
+<tr><td><code>aud</code></td><td><code>"authenticated"</code></td><td>Must equal <code>SUPABASE_JWT_AUDIENCE</code></td></tr>
+<tr><td><code>iss</code></td><td><code>"https://&lt;ref&gt;.supabase.co/auth/v1"</code></td><td>Must equal <code>SUPABASE_URL + "/auth/v1"</code></td></tr>
+<tr><td><code>exp</code>, <code>iat</code></td><td>Unix seconds</td><td>Reject expired (60 s leeway)</td></tr>
+<tr><td><code>role</code></td><td><code>"authenticated"</code></td><td>Reject <code>anon</code> and <code>service_role</code> tokens on user endpoints</td></tr>
+<tr><td><code>email</code>, <code>phone</code></td><td><code>"efua@example.com"</code></td><td>Copied to the profile for relay notifications</td></tr>
+<tr><td><code>app_metadata.landchain_roles</code></td><td><code>["registrar"]</code></td><td>Hint only. Django checks <code>Profile.roles</code>, which admins edit through the API.</td></tr>
+<tr><td><code>user_metadata</code></td><td><code>{"full_name": "Efua Mensah"}</code></td><td>Initial name on first login. User-editable, so never trust it for permissions.</td></tr>
+<tr><td><code>aal</code></td><td><code>"aal1"</code> / <code>"aal2"</code></td><td>Officer write endpoints may require <code>aal2</code> (MFA) when <code>REQUIRE_OFFICER_MFA=true</code></td></tr>
+<tr><td><code>session_id</code></td><td>uuid</td><td>Logged with officer actions</td></tr>
+</tbody></table></div>
+<pre><code># landchain/accounts/auth.py
+import jwt, time
+from jwt import PyJWKClient
+from django.conf import settings
+from rest_framework import authentication, exceptions
+from .models import Profile
+
+_jwks = PyJWKClient(f"{settings.SUPABASE_URL}/auth/v1/.well-known/jwks.json", cache_keys=True, lifespan=600)
+
+class SupabaseUser:
+    """request.user for DRF. is_authenticated is True; .profile is the Profile row."""
+    is_authenticated = True
+    def __init__(self, profile, claims):
+        self.profile, self.claims = profile, claims
+        self.pk = profile.pk
+
+class SupabaseJWTAuthentication(authentication.BaseAuthentication):
+    www_authenticate_realm = "api"
+
+    def authenticate(self, request):
+        header = authentication.get_authorization_header(request).decode()
+        if not header.lower().startswith("bearer "):
+            return None                      # anonymous: public endpoints still work
+        token = header[7:].strip()
+        try:
+            alg = jwt.get_unverified_header(token).get("alg")
+            if alg == "HS256":               # legacy projects
+                key = settings.SUPABASE_JWT_SECRET
+            else:                            # ES256 / RS256 signing keys
+                key = _jwks.get_signing_key_from_jwt(token).key
+            claims = jwt.decode(
+                token, key, algorithms=[alg],
+                audience=settings.SUPABASE_JWT_AUDIENCE,      # "authenticated"
+                issuer=f"{settings.SUPABASE_URL}/auth/v1",
+                leeway=60,
+            )
+        except jwt.ExpiredSignatureError:
+            raise exceptions.AuthenticationFailed({"code": "TOKEN_EXPIRED", "message": "Your session expired. Sign in again."})
+        except jwt.PyJWTError:
+            raise exceptions.AuthenticationFailed({"code": "TOKEN_INVALID", "message": "Sign in again."})
+        if claims.get("role") != "authenticated":
+            raise exceptions.AuthenticationFailed({"code": "TOKEN_INVALID", "message": "Sign in again."})
+
+        profile, created = Profile.objects.get_or_create(
+            supabase_user_id=claims["sub"],
+            defaults={"email": claims.get("email") or None, "phone": claims.get("phone") or None,
+                      "full_name": (claims.get("user_metadata") or {}).get("full_name", "")},
+        )
+        if not created and (profile.email != claims.get("email") or profile.phone != claims.get("phone")):
+            profile.email, profile.phone = claims.get("email") or None, claims.get("phone") or None
+            profile.save(update_fields=["email", "phone", "updated_at"])
+        return SupabaseUser(profile, claims), token
+
+    def authenticate_header(self, request):
+        return 'Bearer realm="api"'</code></pre>
+<pre><code># settings.py
+REST_FRAMEWORK = {
+    "DEFAULT_AUTHENTICATION_CLASSES": ["landchain.accounts.auth.SupabaseJWTAuthentication"],
+    "DEFAULT_PERMISSION_CLASSES": ["rest_framework.permissions.AllowAny"],   # each view sets its own
+    "EXCEPTION_HANDLER": "landchain.core.errors.exception_handler",
+    "DEFAULT_PAGINATION_CLASS": "landchain.core.pagination.Pagination",
+    "DEFAULT_SCHEMA_CLASS": "drf_spectacular.openapi.AutoSchema",
+}</code></pre>
+<p>Frontend side: one helper adds the token.</p>
+<pre><code>// src/lib/landchain/api.ts
+const { data: { session } } = await supabase.auth.getSession();
+const res = await fetch(`${API_URL}/api/v1${path}`, {
+  ...init,
+  headers: { "Content-Type": "application/json", ...(session ? { Authorization: `Bearer ${session.access_token}` } : {}), ...init.headers },
+});</code></pre>
+
+<h3 id="auth-wallet">5.4 Wallet linking (Sign-In with Ethereum, EIP-4361)</h3>
+<p>One wallet per person, one person per wallet ("wallet = identity", assumption 5). Linking proves control of the address. Once the profile has submitted an on-chain identity, the wallet can't be changed through the API (that is key recovery, future work).</p>
+<ol>
+  <li><code>POST /auth/wallet/nonce</code> with the address. Django stores a random nonce (10 min TTL) and returns the exact EIP-4361 message to sign.</li>
+  <li>The UI calls MetaMask <code>personal_sign</code> with that message.</li>
+  <li><code>POST /auth/wallet/verify</code> with the message and signature. Django checks the nonce, domain, chain id, expiry and recovers the signer with <code>eth_account.Account.recover_message(encode_defunct(text=message), signature=sig)</code>. If it matches, the address is linked and the nonce burned.</li>
+</ol>
+<p>Rules: the address must not be linked to another profile (<code>409 WALLET_IN_USE</code>); it must not hold an officer role on chain (<code>LandAccessControl.isOfficer</code>), because officer addresses can't submit profiles (<code>409 WALLET_IS_OFFICER</code>); on Sepolia the UI must switch MetaMask to chain 11155111 first.</p>
+
+<h3 id="auth-roles">5.5 Roles and permissions</h3>
+<div class="tbl"><table>
+<thead><tr><th>Permission class</th><th>Who passes</th><th>Notes</th></tr></thead>
+<tbody>
+<tr><td><code>Public</code></td><td>Anyone, token optional</td><td>Response filtered by privacy rules</td></tr>
+<tr><td><code>IsSignedIn</code></td><td>Valid Supabase token</td><td></td></tr>
+<tr><td><code>HasWallet</code></td><td>Signed in and <code>wallet_address</code> linked</td><td>Needed for any citizen chain action</td></tr>
+<tr><td><code>IsVerifiedCitizen</code></td><td>Has wallet, not an officer, on-chain identity status = verified</td><td>Register land, request a transfer</td></tr>
+<tr><td><code>IsOfficer</code></td><td><code>roles</code> contains <code>registrar</code> or <code>id_officer</code></td><td>Sees all names, documents, fees; review queue</td></tr>
+<tr><td><code>IsIdentityOfficer</code></td><td><code>id_officer</code> in roles</td><td>Verify / reject identity</td></tr>
+<tr><td><code>IsRegistrar</code></td><td><code>registrar</code> in roles</td><td>Record fees, approve / reject registrations and transfers</td></tr>
+<tr><td><code>IsAdmin</code></td><td><code>admin</code> in roles</td><td>Manage officers, resync indexer, view signer balances</td></tr>
+</tbody></table></div>
+<p><code>kind</code> for the UI is derived: <code>"officer"</code> if any officer role, otherwise <code>"citizen"</code>; anonymous callers are <code>"public"</code>. UI role labels map as: <code>registrar</code> → "Registrar", <code>id_officer</code> → "Identity officer", none → "Citizen".</p>
+<div class="tbl"><table>
+<thead><tr><th>Action</th><th>Public</th><th>Citizen (no wallet)</th><th>Citizen (wallet, unverified)</th><th>Verified citizen</th><th>Identity officer</th><th>Registrar</th></tr></thead>
+<tbody>
+<tr><td>Read map, titles, history, activity</td><td>✓ (filtered)</td><td>✓</td><td>✓</td><td>✓</td><td>✓ (all names)</td><td>✓ (all names)</td></tr>
+<tr><td>Submit identity</td><td></td><td></td><td>✓</td><td></td><td></td><td></td></tr>
+<tr><td>Register land</td><td></td><td></td><td></td><td>✓</td><td></td><td></td></tr>
+<tr><td>Request / cancel transfer of own title</td><td></td><td></td><td></td><td>✓ (owner)</td><td></td><td></td></tr>
+<tr><td>Open documents</td><td></td><td>own parcels</td><td>own parcels</td><td>own parcels</td><td>✓</td><td>✓</td></tr>
+<tr><td>See fees, receipt page</td><td></td><td>own parcels</td><td>own parcels</td><td>own parcels</td><td>✓</td><td>✓</td></tr>
+<tr><td>Send enquiry</td><td>✓</td><td>✓</td><td>✓</td><td>✓ (not own)</td><td></td><td></td></tr>
+<tr><td>Verify / reject identity</td><td></td><td></td><td></td><td></td><td>✓</td><td></td></tr>
+<tr><td>Record fees, approve / reject registration or transfer</td><td></td><td></td><td></td><td></td><td></td><td>✓</td></tr>
+</tbody></table></div>
+<p>"Own parcels" means the caller's public ID is the parcel's current owner, the applicant, or anywhere in its owner history (<code>canSeePrivate</code>).</p>
+
+<h3 id="auth-supabase-setup">5.6 Supabase project setup checklist</h3>
+<ol>
+  <li>Auth → Providers: enable Email (confirm email on in production, off for local demo), Phone (SMS provider), optionally Web3.</li>
+  <li>Auth → URL configuration: Site URL = frontend URL; redirect URLs include <code>http://localhost:5173/**</code>.</li>
+  <li>Database → Extensions: enable <code>postgis</code> and <code>pgcrypto</code>.</li>
+  <li>Create schema: <code>create schema landchain;</code>. Point Django at it with <code>OPTIONS: {"options": "-c search_path=landchain,public"}</code>. Do <b>not</b> add <code>landchain</code> to API → Exposed schemas, so the anon key cannot read Django tables through PostgREST.</li>
+  <li>Connection: use the direct connection (port 5432) or session pooler for Django and Celery. If you use the transaction pooler (port 6543), set <code>DISABLE_SERVER_SIDE_CURSORS = True</code> and <code>CONN_MAX_AGE = 0</code>.</li>
+  <li>Storage: create private bucket <code>parcel-documents</code> (file size limit 20 MB, allowed MIME types <code>application/pdf, image/jpeg, image/png</code>) and <code>identity-evidence</code> if decision 18.2 adds card photos. No storage policies for <code>anon</code> or <code>authenticated</code>: only the service role (Django) touches them.</li>
+  <li>Keys: the browser gets <code>SUPABASE_URL</code> + the anon/publishable key. Django gets the service-role/secret key (Storage and Admin API) and the JWT secret if the project uses HS256. Never ship the service-role key to the browser.</li>
+  <li>Officer roles: after <code>POST /admin/officers</code> changes <code>Profile.roles</code>, Django calls the Admin API <code>auth.admin.update_user_by_id(uid, {"app_metadata": {"landchain_roles": [...]}})</code> so new tokens carry the hint. Existing tokens keep the old hint until refresh; Django checks the database anyway.</li>
+</ol>
+
+<h2 id="chain">6. Blockchain integration</h2>
+
+<h3 id="chain-contracts">6.1 Contracts</h3>
+<p>Solidity 0.8.20, OpenZeppelin 5.0.2, deployed in this order by <code>migrations/1_deploy_land_system.js</code>, which then calls <code>titles.setFeeLedger(fees)</code> and grants <code>REGISTRAR_ROLE</code> (Ganache account 0) and <code>ID_OFFICER_ROLE</code> (account 1). ABIs: <code>landchain-contracts/shared/abi/*.json</code>; addresses: <code>shared/deployments.local.json</code> (keyed by chain id, with <code>startBlock</code>). Local addresses (deterministic Ganache):</p>
+<div class="tbl"><table>
+<thead><tr><th>Contract</th><th>Local address (1337)</th><th>Writes</th><th>Reads the backend uses</th><th>Events</th></tr></thead>
+<tbody>
+<tr><td><code>LandAccessControl</code></td><td><code>0xe78A0F7E598Cc8b0Bb87894B0F60dD2a88d6a8Ab</code></td><td><code>grantRole(role, account)</code>, <code>revokeRole</code> (admin only)</td><td><code>rolesOf(addr) → (registrar, idOfficer)</code>, <code>isOfficer</code>, <code>hasRole</code>, <code>getRoleMember(role, i)</code>, <code>getRoleMemberCount</code>, <code>REGISTRAR_ROLE()</code>, <code>ID_OFFICER_ROLE()</code></td><td><code>RoleGranted</code>, <code>RoleRevoked</code>, <code>RoleAdminChanged</code></td></tr>
+<tr><td><code>IdentityRegistry</code></td><td><code>0x5b1869D9A4C187F2EAa108f3062412ecf0526b24</code></td><td><code>submitProfile(bytes32 cardHash, bool citizen)</code> (citizen), <code>verifyProfile(address)</code>, <code>rejectProfile(address)</code> (ID officer)</td><td><code>profileOf(addr) → (status, citizen, cardHash, updatedAt)</code>, <code>isVerified</code>, <code>isCitizen</code>, <code>members()</code>, <code>memberCount</code>, <code>cardOwner(bytes32)</code>, <code>publicIdOf</code></td><td><code>ProfileSubmitted(who, cardHash, citizen)</code>, <code>ProfileVerified(who, by)</code>, <code>ProfileRejected(who, by)</code></td></tr>
+<tr><td><code>TitleRegistry</code> (ERC-721 "LandChain Ghana Title", <code>GLT</code>)</td><td><code>0xCfEB869F69431e42cdB54A4F4f105C19C080A601</code></td><td><code>submitApplication(ApplicationInput)</code>, <code>requestTransfer(recordId, to)</code>, <code>cancelTransfer(transferId)</code> (citizen); <code>approveApplication(appId)</code>, <code>rejectApplication(appId, reason)</code>, <code>approveTransfer(transferId)</code>, <code>rejectTransfer(transferId, reason)</code> (registrar); <code>setFeeLedger</code> (admin, once)</td><td><code>parcelCount</code>, <code>getParcel(recordId)</code>, <code>getBoundary</code>, <code>getDocs</code>, <code>ownerHistory</code>, <code>recordOfParcelId(string)</code>, <code>applicationCount</code>, <code>getApplication</code>, <code>transferCount</code>, <code>getTransfer</code>, <code>openTransferOf(recordId)</code>, <code>recordOfToken</code>, <code>titleCount</code>, ERC-721 views</td><td><code>ApplicationSubmitted(appId, recordId, parcelId, applicant, pillars)</code>, <code>ApplicationApproved(appId, recordId, by)</code>, <code>ApplicationRejected(appId, recordId, by, reason)</code>, <code>TitleMinted(recordId, tokenId, owner)</code>, <code>TransferRequested(transferId, recordId, from, to)</code>, <code>TransferApproved(transferId, recordId, from, to, by)</code>, <code>TransferRejected(transferId, recordId, by, reason)</code>, <code>TransferCancelled(transferId, recordId)</code>, ERC-721 <code>Transfer</code></td></tr>
+<tr><td><code>FeeLedger</code></td><td><code>0x254dffcd3277C0b1660F6d42EFbB754edaBAbC2B</code></td><td><code>recordPayment(recordId, kind, amountPesewas, receiptHash) → paymentId</code> (registrar)</td><td><code>paymentCount</code>, <code>getPayment(id)</code>, <code>paymentsOf(recordId)</code>, <code>isPaid(recordId, kind)</code>, <code>transferFeePaid(transferId)</code>, <code>receiptUsed(bytes32)</code></td><td><code>PaymentRecorded(paymentId, recordId, kind, amountPesewas, receiptHash, by)</code></td></tr>
+</tbody></table></div>
+<p>Key contract behaviour the API must reflect:</p>
+<ul>
+  <li><code>transferFrom</code> / <code>safeTransferFrom</code> always revert ("Titles move only through a registrar-approved transfer"). Never expose them.</li>
+  <li>Pending ≠ minted: an application creates a record with <code>tokenId = 0</code>; the NFT is minted on <code>approveApplication</code>.</li>
+  <li>Approval of a registration needs <code>FeeLedger.isPaid(recordId, StampDuty)</code> and <code>isPaid(recordId, FirstRegistration)</code>. Official search is recorded but not required.</li>
+  <li>Approval of a transfer needs <code>transferFeePaid(transferId)</code>; the transfer fee can only be recorded while a transfer is open (<code>openTransferOf(recordId) ≠ 0</code>) and is bound to that transfer.</li>
+  <li>A receipt hash can never be reused (<code>receiptUsed</code>), and non-transfer fee kinds can be recorded only once per record.</li>
+  <li>Rejecting an application frees its parcel ID and boundary for a corrected application (new record id).</li>
+  <li><code>Payment.payer</code> is the parcel's owner when the fee was recorded.</li>
+  <li><code>TitleRegistry</code> is 20.6 KB of the 24 KB limit: any new on-chain feature belongs in a new contract.</li>
+</ul>
+
+<h3 id="chain-signing">6.2 Who signs what</h3>
+<div class="tbl"><table>
+<thead><tr><th>Mode</th><th>Used for</th><th>How</th></tr></thead>
+<tbody>
+<tr><td><code>backend:registrar</code></td><td><code>recordPayment</code>, <code>approveApplication</code>, <code>rejectApplication</code>, <code>approveTransfer</code>, <code>rejectTransfer</code></td><td>Django signs with <code>REGISTRAR_SIGNER_KEY</code> (env var locally, KMS / Vault in production). The officer's Supabase user is recorded in <code>OfficerAction</code>.</td></tr>
+<tr><td><code>backend:id_officer</code></td><td><code>verifyProfile</code>, <code>rejectProfile</code></td><td><code>ID_OFFICER_SIGNER_KEY</code></td></tr>
+<tr><td><code>backend:admin</code></td><td><code>grantRole</code>, <code>revokeRole</code></td><td><code>ADMIN_SIGNER_KEY</code> (holds <code>DEFAULT_ADMIN_ROLE</code>; locally Ganache account 0)</td></tr>
+<tr><td><code>wallet</code></td><td><code>submitProfile</code>, <code>submitApplication</code>, <code>requestTransfer</code>, <code>cancelTransfer</code></td><td>Contracts check <code>msg.sender</code> (owner / applicant / profile), so the citizen's own wallet must send. The API prepares the unsigned transaction; MetaMask sends it with <code>eth_sendTransaction</code>; the UI reports the hash back (6.3).</td></tr>
+<tr><td><code>dev_unlocked</code></td><td>Same citizen calls, local demo only</td><td>When <code>CHAIN_ID=1337</code> and <code>CHAIN_ALLOW_UNLOCKED_SIGNING=true</code>, and the profile's address is one of Ganache's <code>eth_accounts</code>, the API can send it directly (<code>POST /chain/intents/{id}/dev-sign</code>). Refused on any other chain.</td></tr>
+</tbody></table></div>
+<div class="note"><b>Attribution.</b> On chain, <code>decidedBy</code> / <code>recordedBy</code> / <code>by</code> will be the shared role wallet, not the individual officer. The backend's <code>OfficerAction</code> table is the record of which person pressed the button. Show "Lands Commission registrar" from the chain and the officer's name from <code>OfficerAction</code> to officers only.</div>
+<p><b>Nonces and ordering.</b> One Celery queue per signer (<code>signer.registrar</code>, <code>signer.id_officer</code>, <code>signer.admin</code>) with concurrency 1. The worker reads <code>eth_getTransactionCount(addr, "pending")</code> under a Postgres advisory lock keyed by the signer address, signs, sends, stores the hash. On "nonce too low" it re-reads and retries once. On Sepolia, use EIP-1559 fees (<code>maxFeePerGas = 2 × baseFee + priorityFee</code>) and rebroadcast with +12.5% after 3 minutes unmined.</p>
+<p><b>Gas.</b> Every call: <code>eth_call</code> first (gets the revert reason, spends nothing), then <code>estimate_gas × 1.2</code> (the frontend uses the same 20% margin so mint/transfer never runs out). Signer balances are checked by <code>GET /admin/signers</code>; alert below 0.05 ETH on Sepolia.</p>
+
+<h3 id="chain-intents">6.3 Transaction intents (the write lifecycle)</h3>
+<p>Every chain write, whoever signs, is a <code>TxIntent</code> row. The UI polls <code>GET /chain/intents/{id}</code> (or passes <code>?wait=true</code> to officer endpoints) and refreshes its data when the status is <code>confirmed</code>.</p>
+<pre><code>             prepare (citizen)                         officer endpoint
+                   │                                         │
+                   ▼                                         ▼
+        awaiting_signature ──(UI posts hash)──► submitted ◄── queued ──(signer sends)
+                   │                               │
+             expires (15 min)               receipt status 1 ──► mined ──(N confirmations + indexed)──► confirmed
+                   ▼                               │
+                expired                     receipt status 0 ──► reverted (revert_reason)
+                                            dropped / replaced ─► failed
+   simulation refused at prepare/queue time ──► 422 response + Tx row with status "Reverted" (no intent kept)</code></pre>
+<div class="tbl"><table>
+<thead><tr><th>Status</th><th>Meaning</th></tr></thead>
+<tbody>
+<tr><td><code>awaiting_signature</code></td><td>Citizen tx prepared, waiting for MetaMask. <code>tx</code> field holds the unsigned transaction.</td></tr>
+<tr><td><code>queued</code></td><td>Officer tx accepted, waiting for its signer worker.</td></tr>
+<tr><td><code>submitted</code></td><td>Hash known, not yet mined.</td></tr>
+<tr><td><code>mined</code></td><td>Receipt with status 1 in block N.</td></tr>
+<tr><td><code>confirmed</code></td><td>Block N has <code>CHAIN_CONFIRMATIONS</code> confirmations (0 on Ganache, 2 on Sepolia) <b>and</b> the indexer has processed block N, so reads already show the change.</td></tr>
+<tr><td><code>reverted</code></td><td>Mined with status 0 (rare, since we simulate first: state changed between simulate and mine).</td></tr>
+<tr><td><code>failed</code></td><td>Dropped, replaced, or the RPC refused the raw transaction. <code>error</code> explains.</td></tr>
+<tr><td><code>expired</code></td><td>Prepared but never signed within 15 minutes.</td></tr>
+</tbody></table></div>
+<p>When an intent is reported as submitted, the backend checks the transaction it finds on chain: <code>to</code>, <code>input</code> and <code>from</code> must equal what it prepared (<code>422 TX_MISMATCH</code> otherwise). That stops someone linking an unrelated hash to an intent.</p>
+
+<h3 id="chain-encoding">6.4 Encoding rules (must match the frontend and contracts exactly)</h3>
+<div class="tbl"><table>
+<thead><tr><th>Value</th><th>Rule</th><th>Python</th></tr></thead>
+<tbody>
+<tr><td>Public ID</td><td><code>"GH-"</code> + first 4 bytes (8 hex chars) of keccak256 of the 20 address bytes</td><td><code>"GH-" + Web3.keccak(hexstr=addr).hex().removeprefix("0x")[:8]</code></td></tr>
+<tr><td>Ghana Card hash</td><td>keccak256 of UTF-8 <code>"landchain-card:" + card.strip().upper()</code> with all whitespace removed. Card format <code>^GHA-\d{9}-\d$</code>.</td><td><code>Web3.keccak(text="landchain-card:" + re.sub(r"\s+", "", card.strip().upper())).hex()</code></td></tr>
+<tr><td>Receipt hash</td><td>keccak256 of UTF-8 <code>receipt_no.strip().upper()</code></td><td><code>Web3.keccak(text=receipt_no.strip().upper())</code></td></tr>
+<tr><td>Document fingerprint</td><td>SHA-256 of the file bytes, as <code>bytes32</code> hex <code>0x…</code> (64 hex chars)</td><td><code>"0x" + hashlib.sha256(data).hexdigest()</code></td></tr>
+<tr><td>Coordinates</td><td>int32 micro-degrees, <code>round(deg × 1e6)</code>; Ghana box lat 4,500,000…11,200,000, lng −3,300,000…1,300,000; 3 to 32 pillars; <code>lats</code> and <code>lngs</code> same length</td><td><code>round(lat * 1_000_000)</code></td></tr>
+<tr><td>Area</td><td><code>acresX100 = max(1, round(area_acres × 100))</code>, uint32, &gt; 0. Frontend formula: shoelace area on a local projection around Berekuso (5.7505, −0.2275), 110,540 m/° lat, 111,320·cos(lat) m/° lng, 4046.8564 m²/acre. Use the same formula so the area shown before submit equals the stored one (or switch both sides to pyproj geodesic area).</td><td>see <code>geo.areaAcres</code></td></tr>
+<tr><td>Amount</td><td>uint64 pesewas, <code>round(ghs × 100)</code>, &gt; 0</td><td><code>int((Decimal(ghs) * 100).quantize(Decimal(1)))</code></td></tr>
+<tr><td>Parcel ID</td><td>11 chars <code>AA-AAA-0000</code> (two capitals, dash, three capitals, dash, four digits)</td><td><code>re.fullmatch(r"[A-Z]{2}-[A-Z]{3}-\d{4}", pid)</code></td></tr>
+<tr><td>GhanaPostGPS</td><td>Optional; UI format <code>^[A-Z]{2}-\d{3,4}-\d{4}$</code>, uppercased (not checked on chain)</td><td></td></tr>
+<tr><td>Timestamps</td><td>uint64 seconds on chain → ISO in API</td><td></td></tr>
+</tbody></table></div>
+<p>Enum indices (on chain ↔ API string):</p>
+<div class="tbl"><table>
+<thead><tr><th>Enum</th><th>0</th><th>1</th><th>2</th><th>3</th></tr></thead>
+<tbody>
+<tr><td><code>IdentityRegistry.Status</code> → <code>identity</code></td><td><code>none</code></td><td><code>pending</code></td><td><code>verified</code></td><td><code>rejected</code></td></tr>
+<tr><td><code>TitleRegistry.Interest</code> → <code>interest</code></td><td><code>Allodial</code></td><td><code>Customary freehold</code></td><td><code>Common-law freehold</code></td><td><code>Leasehold</code></td></tr>
+<tr><td><code>TitleRegistry.Status</code> → <code>status</code></td><td><code>pending</code></td><td><code>registered</code></td><td><code>transfer_pending</code></td><td><code>rejected</code></td></tr>
+<tr><td><code>TitleRegistry.Decision</code> → <code>decision</code></td><td><code>waiting</code></td><td><code>approved</code></td><td><code>rejected</code></td><td><code>cancelled</code></td></tr>
+<tr><td><code>FeeLedger.Kind</code> → <code>kind</code></td><td><code>Official search</code></td><td><code>Stamp duty</code></td><td><code>First registration</code></td><td><code>Transfer</code></td></tr>
+</tbody></table></div>
+<p>Document types used by the UI (free-text <code>docType</code> on chain): <code>Site plan</code>*, <code>Indenture</code>*, <code>Search report</code>*, <code>Consent / concurrence</code> (* required by the UI; the contract does not require any).</p>
+
+<h3 id="chain-indexer">6.5 Event indexer</h3>
+<p>Replaces <code>chain/snapshot.ts</code>. A Celery beat task (every 2 s locally, 6 s on Sepolia) or a long-running management command <code>run_indexer</code>:</p>
+<ol>
+  <li>Read <code>IndexerCursor(chain_id)</code>. First run starts at the deployment's <code>startBlock</code>.</li>
+  <li><code>to_block = head − CHAIN_CONFIRMATIONS</code>; process in batches of 2,000 blocks with <code>eth_getLogs</code> filtered by the four contract addresses.</li>
+  <li>For each log in (block, logIndex) order: decode with the ABI, insert into <code>ChainEvent</code> (unique on <code>tx_hash, log_index</code>, so replays are safe), fetch the block timestamp once per block (cache), fetch the tx receipt once per tx for <code>gas_used</code>, <code>effective_gas_price</code>, <code>from</code> → <code>ChainTx</code>.</li>
+  <li>Apply the event to the projection tables, and refresh the touched rows from view functions (<code>getParcel</code>, <code>getBoundary</code>, <code>getDocs</code>, <code>ownerHistory</code>, <code>getApplication</code>, <code>getTransfer</code>, <code>getPayment</code>, <code>profileOf</code>, <code>rolesOf</code>) so the projection always equals the contract state.</li>
+  <li>Write history rows, activity rows and notifications (section 12); link staged documents to the new record (job 13.4); mark matching intents <code>confirmed</code>.</li>
+  <li>Save the cursor in the same database transaction.</li>
+</ol>
+<p><b>Reorgs:</b> keep each block's hash. If the stored hash of the cursor block differs from the chain's, roll back events newer than the last matching block (delete <code>ChainEvent</code> rows, rebuild affected projections from view functions) and continue. Ganache never reorgs; Sepolia rarely does beyond 2 blocks. <b>Fresh chain:</b> if <code>eth_chainId</code> or the <code>TitleRegistry</code> address differs from the cursor's, or the cursor block is above head (Ganache restarted with <code>chain:fresh</code>), wipe the projection for that chain and re-index from <code>startBlock</code>. <code>POST /admin/indexer/resync</code> forces this.</p>
+<p><b>Mapping, mirroring snapshot.ts:</b></p>
+<div class="tbl"><table>
+<thead><tr><th>Event</th><th>Projection update</th><th>Activity row (<code>fn(args)</code>)</th><th>History row</th></tr></thead>
+<tbody>
+<tr><td><code>ProfileSubmitted</code></td><td>upsert <code>ChainIdentity(address)</code> status pending</td><td><code>submitProfile(0x1234abcd…, citizen)</code> from <code>who</code></td><td></td></tr>
+<tr><td><code>ProfileVerified</code> / <code>Rejected</code></td><td>status verified / rejected</td><td><code>verifyProfile(GH-…)</code> / <code>rejectProfile(GH-…)</code> from <code>by</code></td><td></td></tr>
+<tr><td><code>ApplicationSubmitted</code></td><td>create <code>Parcel(record_id)</code> + boundary + docs, <code>Application(app_id)</code></td><td><code>submitApplication("GA-BRK-0015", 4 pillars)</code></td><td>Application: "Applied by GH-…"</td></tr>
+<tr><td><code>ApplicationApproved</code></td><td>application approved, decided_by/at</td><td><code>approveApplication(APP-15)</code></td><td></td></tr>
+<tr><td><code>TitleMinted</code></td><td>parcel registered, token id, registered_at, owner history [owner]</td><td></td><td>Registration: "Title GLT #15 minted to GH-…"</td></tr>
+<tr><td><code>ApplicationRejected</code></td><td>application rejected + reason; parcel rejected</td><td><code>rejectApplication(APP-15, "reason")</code></td><td>Rejected: "Rejected by the registrar: reason"</td></tr>
+<tr><td><code>TransferRequested</code></td><td>create <code>TransferRequest</code>, parcel transfer_pending</td><td><code>requestTransfer("GA-BRK-0006", GH-…)</code></td><td>Transfer requested: "GH-a asked to transfer to GH-b"</td></tr>
+<tr><td><code>TransferApproved</code></td><td>transfer approved; parcel owner = to, owners append, status registered</td><td><code>approveTransfer(TRF-3)</code></td><td>Transfer: "GH-a → GH-b, approved by the registrar"</td></tr>
+<tr><td><code>TransferRejected</code></td><td>transfer rejected + reason; parcel registered</td><td><code>rejectTransfer(TRF-3, "reason")</code></td><td>Transfer rejected: "Rejected by the registrar: reason"</td></tr>
+<tr><td><code>TransferCancelled</code></td><td>transfer cancelled; parcel registered</td><td><code>cancelTransfer(TRF-3)</code> from the transfer's <code>from</code></td><td>Transfer cancelled: "Cancelled by the owner"</td></tr>
+<tr><td><code>PaymentRecorded</code></td><td>create <code>Payment(payment_id)</code> from <code>getPayment</code></td><td><code>recordPayment("GA-BRK-0002", Stamp duty)</code></td><td></td></tr>
+<tr><td><code>RoleGranted</code> / <code>RoleRevoked</code></td><td>update <code>ChainRole</code></td><td><code>grantRole(REGISTRAR_ROLE, 0x…)</code></td><td></td></tr>
+</tbody></table></div>
+<p>History and payments are shown only for the <b>current</b> record of each parcel ID (the frontend's <code>isCurrent</code>); older rejected records stay in the database and are reachable with <code>?record_id=</code>.</p>
+
+<h2 id="models">7. Data model (Django models, schema <code>landchain</code>)</h2>
+<p>Two kinds of table. <b>Off-chain</b> tables are owned by Django and hold everything that must never go on chain. <b>Projection</b> tables are written only by the indexer and can be rebuilt from the chain at any time; API views never write to them.</p>
+
+<h3>7.1 Off-chain (source of truth is Django)</h3>
+<pre><code>Profile
+  id                 uuid pk
+  supabase_user_id   uuid unique            # JWT sub
+  email              citext null
+  phone              varchar(20) null       # E.164
+  full_name          varchar(120)           # never on chain; replaces localStorage "landchain-names"
+  wallet_address     char(42) unique null   # lowercase
+  public_id          char(11) unique null   # GH-xxxxxxxx, derived from wallet_address
+  wallet_linked_at   timestamptz null
+  roles              text[] default {}      # subset of {registrar, id_officer, admin}
+  notify_email       bool default true
+  notify_sms         bool default false
+  is_demo            bool default false
+  created_at, updated_at
+
+WalletNonce
+  nonce              varchar(32) pk
+  address            char(42)
+  profile            fk Profile
+  message            text                    # exact EIP-4361 text issued
+  expires_at         timestamptz
+  used_at            timestamptz null
+
+Document                                     # replaces vault.ts (IndexedDB)
+  id                 "doc_" ULID pk
+  sha256             char(66) index          # 0x + 64 hex, equals on-chain Doc.hash
+  doc_type           varchar(40)             # Site plan | Indenture | Search report | Consent / concurrence
+  original_name      varchar(255)            # private: may contain a person's name
+  mime               varchar(80)
+  size_bytes         int
+  storage_path       varchar(300)            # parcel-documents/&lt;sha256&gt;
+  uploaded_by        fk Profile
+  status             enum(staged, attached, orphaned)
+  parcel_record_id   int null                # set when the indexer sees the fingerprint on a record
+  created_at, attached_at
+  unique (sha256, uploaded_by)
+
+Enquiry                                      # replaces enquiries.ts (localStorage)
+  id                 "enq_" ULID pk
+  parcel_id          varchar(11)
+  record_id          int
+  to_public_id       char(11)                # owner at the time
+  to_profile         fk Profile null         # resolved owner profile (never returned to the sender)
+  from_profile       fk Profile null         # null for anonymous visitors
+  from_public_id     varchar(11) default "public"
+  name               varchar(120)
+  contact            varchar(160)            # phone or email of the enquirer
+  message            text (max 2000)
+  status             enum(new, read, answered)
+  relayed_at         timestamptz null        # email/SMS sent to owner
+  ip_hash            char(64)                # sha256(ip + salt) for rate limiting / abuse
+  created_at, read_at, answered_at
+
+PaymentReceipt                               # private side of a FeeLedger payment
+  payment_id         int pk                  # FeeLedger payment id (after indexing)
+  intent             fk TxIntent unique
+  receipt_no         varchar(64)             # plain receipt number, officers only
+  consideration_ghs  numeric(14,2) null      # price paid, for stamp duty
+  note               text null
+
+TxIntent
+  id                 "txi_" ULID pk
+  chain_id           int
+  action             varchar(40)             # submitProfile, submitApplication, ...
+  contract           varchar(30)
+  function           varchar(40)
+  args_json          jsonb                   # decoded args
+  args_label         varchar(200)            # human label, same as UI's Tx.args
+  signer_mode        enum(wallet, backend_registrar, backend_id_officer, backend_admin, dev_unlocked)
+  from_address       char(42)
+  to_address         char(42)
+  data               text                    # calldata
+  gas_limit          bigint
+  status             enum(awaiting_signature, queued, submitted, mined, confirmed, reverted, failed, expired)
+  tx_hash            char(66) unique null
+  block_number       bigint null
+  revert_reason      text null
+  error              text null
+  result_json        jsonb null              # {app_id, record_id, transfer_id, payment_id}
+  idempotency_key    uuid null
+  created_by         fk Profile
+  created_at, updated_at, expires_at
+  unique (created_by, idempotency_key)
+
+OfficerAction                                # who pressed the button (role wallets are shared)
+  id, intent fk TxIntent, officer fk Profile, role varchar(20), action varchar(40),
+  target varchar(40)                         # APP-15, TRF-3, GH-…, GA-BRK-0002
+  reason text null, session_id uuid null, ip inet null, created_at
+
+Notification
+  id                 "ntf_" ULID pk
+  recipient_public_id varchar(11) null       # for a citizen
+  recipient_role     varchar(20) null        # "registrar" | "id_officer" (UI's "role:Registrar")
+  recipient_profile  fk Profile null
+  kind               varchar(40)             # see section 12
+  text               varchar(300)
+  parcel_id          varchar(11) null
+  link               varchar(120) null       # "/title/GA-BRK-0006", "/review"
+  source_event       fk ChainEvent null
+  at                 timestamptz
+  NotificationRead(notification, profile, read_at)  # role notifications are read per officer
+
+RevertLog                                    # simulation refusals, shown in the activity log
+  id, chain_id, contract, function, args_label, from_address, from_public_id,
+  error text, intent fk null, created_at</code></pre>
+
+<h3>7.2 Projection (written by the indexer only)</h3>
+<pre><code>IndexerCursor(chain_id pk, title_registry_address, last_block, last_block_hash, updated_at)
+ChainBlock(chain_id, number, hash, timestamp)                         pk (chain_id, number)
+ChainEvent(chain_id, tx_hash, log_index, block_number, contract, event, args jsonb)  unique (chain_id, tx_hash, log_index)
+ChainTx(chain_id, tx_hash pk, from_address, to_address, contract, function, args_label,
+        block_number, at, status "Success", gas_used, effective_gas_price_wei, cost_wei)
+
+ChainIdentity(address pk, public_id, status, citizen bool, card_hash, updated_at)
+ChainRole(address, role)                                              # registrar | id_officer | admin
+
+Parcel
+  record_id          int pk                  # TitleRegistry record id
+  parcel_id          varchar(11) index       # not unique (rejected ids are reused)
+  is_current         bool index              # latest record for this parcel_id
+  interest           smallint
+  holder, region, location, plan_number, gps_address  varchar
+  acres_x100         int
+  status             smallint
+  owner_address      char(42); owner_public_id char(11)
+  token_id           int null
+  registered_at      timestamptz null; updated_at timestamptz
+  boundary           geometry(Polygon, 4326)   # PostGIS, GIST index
+  lats_micro int[]; lngs_micro int[]
+  created_block, updated_block bigint
+
+ParcelDoc(record_id, position, doc_type, sha256)
+OwnerHistory(record_id, position, address, public_id)                 # oldest first
+Application(app_id pk, record_id, applicant_address, applicant_public_id, created_at,
+            decision, decided_by, decided_at, reason)
+TransferRequest(transfer_id pk, record_id, from_address, from_public_id, to_address, to_public_id,
+                requested_at, decision, decided_by, decided_at, reason)
+Payment(payment_id pk, record_id, kind, amount_pesewas, receipt_hash, payer_address, payer_public_id,
+        recorded_by, at, transfer_id null, block_number, tx_hash)
+HistoryEvent(id, record_id, parcel_id, type, text, at, block_number, tx_hash)</code></pre>
+<p>Overlap check in SQL (touching edges are allowed, as in the frontend's strict segment test):</p>
+<pre><code>SELECT parcel_id FROM landchain.parcel
+WHERE is_current AND status &lt;&gt; 3                                 -- not rejected
+  AND ST_Intersects(boundary, ST_GeomFromGeoJSON(%s))
+  AND NOT ST_Touches(boundary, ST_GeomFromGeoJSON(%s))
+LIMIT 1;</code></pre>
+
+<h2 id="schemas">8. Shared JSON objects</h2>
+<p>Field marked <b>private</b> are present only when the caller passes the privacy check for that parcel or person (section 11); otherwise they are omitted or <code>null</code>, as noted.</p>
+
+<h4 id="obj-person">PersonRef</h4>
+<p>How the API refers to any person. Replaces <code>shownName</code> in the UI.</p>
+<pre><code>{
+  "public_id": "GH-7d4e894d",
+  "name": "Ama Owusu",          // private: null unless the caller is an officer or this person; officers' role name always shown
+  "kind": "citizen",            // "citizen" | "officer"
+  "label": "Ama Owusu"          // what to display: name if visible, else public_id; officers: "Lands Commission registrar"
+}</code></pre>
+
+<h4 id="obj-me">Me</h4>
+<pre><code>{
+  "user_id": "8d0f6c1e-5b3a-4f7e-9a51-2c1d0e7b9f33",
+  "email": "efua@example.com",
+  "phone": null,
+  "full_name": "Efua Mensah",
+  "wallet_address": "0x28a8746e75304c0780e011bed21c72cd78cd535e",
+  "public_id": "GH-3c1f9a02",
+  "kind": "citizen",                         // "citizen" | "officer"
+  "roles": ["Citizen"],                      // UI labels: "Citizen" | "Registrar" | "Identity officer"; plus "Admin"
+  "identity": {
+    "status": "none",                        // none | pending | verified | rejected   (from chain)
+    "citizenship": null,                     // "citizen" | "non-citizen" | null
+    "card_hash": null,
+    "updated_at": null,
+    "pending_intent": null                   // TxIntent id if a submitProfile is in flight
+  },
+  "capabilities": {
+    "can_link_wallet": false,
+    "can_submit_identity": true,
+    "can_register_land": false,
+    "can_request_transfer": false,
+    "can_review_identities": false,
+    "can_review_registrations": false,
+    "can_record_fees": false,
+    "is_admin": false
+  },
+  "counts": { "unread_notifications": 2, "new_enquiries": 0, "parcels_owned": 0, "queue_items": 0 },
+  "notify": { "email": true, "sms": false }
+}</code></pre>
+
+<h4 id="obj-parcel">Parcel (detail)</h4>
+<pre><code>{
+  "parcel_id": "GA-BRK-0002",
+  "record_id": 2,
+  "title_no": 2,                              // GLT token id; null while pending / rejected
+  "status": "registered",                     // pending | registered | transfer_pending | rejected
+  "status_label": "Registered",
+  "interest": "Customary freehold",
+  "holder": "Berekuso Stool",
+  "region": "Eastern",
+  "location": "Berekuso, Eastern Region",
+  "plan_number": "SER B4102/25",
+  "gps_address": "EA-1805-5795",
+  "acres": "1.24",
+  "acres_x100": 124,
+  "owner": { "public_id": "GH-7d4e894d", "name": null, "kind": "citizen", "label": "GH-7d4e894d" },
+  "owners": [ { "public_id": "GH-7d4e894d", "name": null, "kind": "citizen", "label": "GH-7d4e894d" } ],
+  "boundary": {
+    "pillars": [[5.750912, -0.228113], [5.751204, -0.227401], [5.750633, -0.227088], [5.750341, -0.227802]],
+    "lats_micro": [5750912, 5751204, 5750633, 5750341],
+    "lngs_micro": [-228113, -227401, -227088, -227802],
+    "centroid": [5.750773, -0.227601],
+    "pillar_count": 4
+  },
+  "registered_at": "2026-11-19T13:47:31Z",
+  "updated_at": "2026-11-19T13:47:31Z",
+  "documents": [
+    { "doc_type": "Site plan", "sha256": "0x9f2c…e41a", "file_available": true,  "can_open": false },
+    { "doc_type": "Indenture", "sha256": "0x51b0…07cd", "file_available": false, "can_open": false },
+    { "doc_type": "Search report", "sha256": "0xa33e…9b10", "file_available": false, "can_open": false }
+  ],
+  "application": {                            // latest application for this record
+    "id": "APP-2", "decision": "approved",
+    "applicant": { "public_id": "GH-7d4e894d", "name": null, "kind": "citizen", "label": "GH-7d4e894d" },
+    "created_at": "2026-11-19T13:47:20Z",
+    "decided_by": { "public_id": "GH-1a2b3c4d", "name": "Lands Commission", "kind": "officer", "label": "Lands Commission registrar" },
+    "decided_at": "2026-11-19T13:47:31Z",
+    "reason": null
+  },
+  "open_transfer": null,                      // TransferRequest object when status = transfer_pending
+  "fees": {                                    // private: null for public
+    "total_ghs": "3076.00", "count": 3,
+    "stamp_duty_recorded": true, "first_registration_recorded": true, "official_search_recorded": true
+  },
+  "visibility": "public",                      // "public" | "private" (caller can see private details)
+  "viewer": { "is_owner": false, "was_owner": false, "can_transfer": false, "can_cancel_transfer": false, "can_enquire": true },
+  "chain": {
+    "chain_id": 1337,
+    "contract": "TitleRegistry",
+    "address": "0xcfeb869f69431e42cdb54a4f4f105c19c080a601",
+    "record_id": 2, "token_id": 2,
+    "explorer_url": null                       // https://sepolia.etherscan.io/token/&lt;addr&gt;?a=2 on Sepolia
+  }
+}</code></pre>
+<p><b>Parcel (list item)</b> is the same minus <code>documents</code>, <code>application</code>, <code>fees</code>, <code>boundary.lats_micro/lngs_micro</code>, plus <code>"owners_count": 1</code>.</p>
+
+<h4 id="obj-application">Application</h4>
+<pre><code>{ "id": "APP-15", "app_id": 15, "parcel_id": "GA-BRK-0015", "record_id": 15,
+  "applicant": PersonRef, "created_at": "…", "decision": "waiting",
+  "decided_by": PersonRef | null, "decided_at": null, "reason": null,
+  "fees_ready": false,                          // stamp duty + first registration both recorded
+  "missing_fees": ["Stamp duty", "First registration"] }</code></pre>
+
+<h4 id="obj-transfer">TransferRequest</h4>
+<pre><code>{ "id": "TRF-3", "transfer_id": 3, "parcel_id": "GA-BRK-0006", "record_id": 6,
+  "from": PersonRef, "to": PersonRef, "to_identity": "verified",
+  "requested_at": "…", "decision": "waiting",
+  "decided_by": null, "decided_at": null, "reason": null,
+  "transfer_fee_recorded": false }</code></pre>
+
+<h4 id="obj-payment">Payment</h4>
+<pre><code>{ "id": "PAY-5", "payment_id": 5, "parcel_id": "GA-BRK-0002", "record_id": 2,
+  "kind": "Stamp duty", "kind_index": 1, "paid_to": "Ghana Revenue Authority",
+  "amount_ghs": "744.00", "amount_pesewas": 74400,
+  "receipt_hash": "0x6b1d…a0f3",
+  "receipt_no": "GRA-SD-2026-004411",         // officers only; never on chain
+  "payer": PersonRef, "recorded_by": PersonRef,
+  "transfer_id": null,                          // "TRF-3" for Transfer fees
+  "at": "…", "block": 24, "tx_hash": "0x…" }</code></pre>
+
+<h4 id="obj-history">HistoryEvent</h4>
+<pre><code>{ "parcel_id": "GA-BRK-0001",
+  "type": "Transfer",   // Application | Registration | Transfer requested | Transfer | Transfer rejected | Transfer cancelled | Rejected
+  "text": "GH-1f0e… → GH-9c2a…, approved by the registrar",
+  "at": "…", "block": 41, "tx_hash": "0x…" }</code></pre>
+
+<h4 id="obj-tx">ActivityTx</h4>
+<pre><code>{ "tx_hash": "0x…",                    // null for simulation refusals
+  "contract": "TitleRegistry", "function": "requestTransfer",
+  "args_label": "\"GA-BRK-0002\", GH-9c2a41d0",
+  "call": "TitleRegistry.requestTransfer(\"GA-BRK-0002\", GH-9c2a41d0)",
+  "from": PersonRef, "block": 57, "at": "…",
+  "status": "Success",                   // "Success" | "Reverted"
+  "error": null,                         // revert reason when Reverted
+  "gas_used": 98211, "cost_eth": "0.000196" }</code></pre>
+
+<h4 id="obj-intent">TxIntent</h4>
+<pre><code>{ "id": "txi_01JD3K8W5Q9Y2M7T4R6V1B0C3N",
+  "action": "submitApplication",
+  "contract": "TitleRegistry", "function": "submitApplication",
+  "args_label": "\"GA-BRK-0015\", 4 pillars",
+  "signer": "wallet",                     // wallet | backend:registrar | backend:id_officer | backend:admin | dev_unlocked
+  "status": "awaiting_signature",
+  "from": "0x28a8746e75304c0780e011bed21c72cd78cd535e",
+  "tx": {                                 // present while awaiting_signature (wallet mode)
+    "from": "0x28a8746e75304c0780e011bed21c72cd78cd535e",
+    "to": "0xcfeb869f69431e42cdb54a4f4f105c19c080a601",
+    "data": "0x6c7c…",
+    "value": "0x0",
+    "gas": "0x9c7a8",
+    "chainId": "0x539"
+  },
+  "tx_hash": null, "block": null,
+  "revert_reason": null, "error": null,
+  "result": null,                         // after confirmed: {"application_id":"APP-15","record_id":15,"parcel_id":"GA-BRK-0015"}
+  "success_message": "Application submitted",
+  "created_at": "…", "updated_at": "…", "expires_at": "…" }</code></pre>
+
+<h4 id="obj-notification">Notification</h4>
+<pre><code>{ "id": "ntf_01JD…", "kind": "transfer_requested_to_you",
+  "text": "GH-1f0e2b7a asked to transfer GA-BRK-0006 to you",
+  "parcel_id": "GA-BRK-0006", "link": "/title/GA-BRK-0006",
+  "audience": "me",                       // "me" | "role:Registrar" | "role:Identity officer"
+  "at": "…", "read": false }</code></pre>
+
+<h4 id="obj-enquiry">Enquiry (owner's view)</h4>
+<pre><code>{ "id": "enq_01JD…", "parcel_id": "GA-BRK-0003",
+  "from_public_id": "public", "name": "Kojo Appiah", "contact": "024 000 0000",
+  "message": "I'm interested in buying this plot. Is it available?",
+  "status": "new", "at": "…" }</code></pre>
+
+<h2 id="endpoints">9. Endpoints</h2>
+<p>Each card lists auth, the request, the response and the errors specific to it. All endpoints can also return <code>401 TOKEN_EXPIRED / TOKEN_INVALID</code>, <code>429 RATE_LIMITED</code>, <code>503 CHAIN_UNAVAILABLE</code> and <code>500 INTERNAL</code>. Chips: <span class="chip">auth level</span> <span class="chip chain">contract call it causes</span>.</p>
+
+<h3 id="ep-system">9.1 System and config</h3>
+
+<div class="ep get"><div class="ep-head"><span class="m get">GET</span><span class="path">/health</span><span class="chip">Public</span></div>
+<p>Liveness for the load balancer. Checks database and Redis, not the chain.</p>
+<h5>Response 200</h5><pre><code>{ "ok": true, "version": "1.0.0", "db": "ok", "redis": "ok" }</code></pre></div>
+
+<div class="ep get"><div class="ep-head"><span class="m get">GET</span><span class="path">/config</span><span class="chip">Public</span></div>
+<p>Everything the frontend currently reads from <code>chain/config.ts</code> and <code>generated/deployments.json</code>. The UI no longer needs ABIs.</p>
+<h5>Response 200</h5><pre><code>{
+  "chain_id": 1337,
+  "chain_name": "Local Ganache",            // 11155111 → "Sepolia testnet"
+  "is_local": true,
+  "rpc_url_public": "http://127.0.0.1:7545", // for MetaMask wallet_addEthereumChain
+  "explorer": null,                          // "https://sepolia.etherscan.io"
+  "contracts": {
+    "LandAccessControl": "0xe78a0f7e598cc8b0bb87894b0f60dd2a88d6a8ab",
+    "IdentityRegistry":  "0x5b1869d9a4c187f2eaa108f3062412ecf0526b24",
+    "TitleRegistry":     "0xcfeb869f69431e42cdb54a4f4f105c19c080a601",
+    "FeeLedger":         "0x254dffcd3277c0b1660f6d42efbb754edabac2b"
+  },
+  "deployment": { "network": "development", "start_block": 0, "deployed_at": "2026-11-19T13:47:10.274Z" },
+  "features": { "dev_unlocked_signing": true, "demo_accounts": true, "sms_relay": false },
+  "doc_types": [
+    { "type": "Site plan", "required": true, "note": "Prepared by a licensed surveyor, approved by Survey & Mapping" },
+    { "type": "Indenture", "required": true, "note": "Proof of ownership: indenture, family declaration or deed of gift" },
+    { "type": "Search report", "required": true, "note": "Official search from the Lands Commission" },
+    { "type": "Consent / concurrence", "required": false, "note": "Only for stool or family land" }
+  ],
+  "interests": ["Allodial", "Customary freehold", "Common-law freehold", "Leasehold"],
+  "limits": { "min_pillars": 3, "max_pillars": 32, "max_upload_mb": 20,
+              "ghana_box": { "min_lat": 4.5, "max_lat": 11.2, "min_lng": -3.3, "max_lng": 1.3 } }
+}</code></pre></div>
+
+<div class="ep get"><div class="ep-head"><span class="m get">GET</span><span class="path">/chain/status</span><span class="chip">Public</span></div>
+<p>Replaces <code>ChainStatus</code> in <code>store.ts</code> (the banner "Can't reach … Is the chain running?").</p>
+<h5>Response 200</h5><pre><code>{ "kind": "ok",                       // "ok" | "error"
+  "chain_id": 1337, "name": "Local Ganache",
+  "head_block": 212, "indexed_block": 212, "lag_blocks": 0,
+  "contracts_match": true,            // code exists at every configured address
+  "error": null }                     // e.g. "This chain doesn't have the current LandChain contracts. Run npm run setup:all in landchain-contracts."</code></pre></div>
+
+<div class="ep get"><div class="ep-head"><span class="m get">GET</span><span class="path">/dev/demo-accounts</span><span class="chip">Public · local chain only</span></div>
+<p>Lists the seeded Supabase demo users so the login page can offer one-click sign-in. Returns <code>404</code> unless <code>CHAIN_ID=1337</code> and <code>DEMO_MODE=true</code>.</p>
+<h5>Response 200</h5><pre><code>{ "password_hint": "set by DEMO_PASSWORD",
+  "accounts": [
+    { "name": "Lands Commission", "email": "registrar@demo.landchain.local", "kind": "officer", "roles": ["Registrar", "Admin"], "public_id": "GH-…", "address": "0x90f8bf6a479f320ead074411a4b0e7944ea8c9c1" },
+    { "name": "Abena Sarpong", "email": "abena@demo.landchain.local", "kind": "officer", "roles": ["Identity officer"], "public_id": "GH-…", "address": "0xffcf8fdee72ac11b5c542428b35eef5769c409f0" },
+    { "name": "Ama Owusu", "email": "ama@demo.landchain.local", "kind": "citizen", "roles": ["Citizen"], "identity": "verified", "public_id": "GH-…", "address": "0x22d491bde2303f2f43325b2108d26f1eaba1e32b" },
+    { "name": "Yaw Boakye",    "email": "yaw@demo.landchain.local",    "address": "0xe11ba2b4d45eaed5996cd0823791e0c93114882d", "identity": "verified" },
+    { "name": "Kofi Mensah",   "email": "kofi@demo.landchain.local",   "address": "0xd03ea8624c8c5987235048901fb614fdca89b117", "identity": "verified" },
+    { "name": "Akosua Darko",  "email": "akosua@demo.landchain.local", "address": "0x95ced938f7991cd0dfcb48f0a06a40fa1af46ebc", "identity": "verified", "citizenship": "non-citizen" },
+    { "name": "Kwabena Ofori", "email": "kwabena@demo.landchain.local","address": "0x3e5e9111ae8eb78fe1cc3bb8915d5d461f3ef9a9", "identity": "pending" },
+    { "name": "Efua Mensah",   "email": "efua@demo.landchain.local",   "address": "0x28a8746e75304c0780e011bed21c72cd78cd535e", "identity": "none" }
+  ] }</code></pre></div>
+
+<h3 id="ep-me">9.2 Me, wallet, notifications</h3>
+
+<div class="ep get"><div class="ep-head"><span class="m get">GET</span><span class="path">/me</span><span class="chip">IsSignedIn</span></div>
+<p>The signed-in person. Replaces <code>useMe()</code>. Creates the profile on first call.</p>
+<h5>Response 200</h5><p>A <a href="#obj-me">Me</a> object.</p></div>
+
+<div class="ep patch"><div class="ep-head"><span class="m patch">PATCH</span><span class="path">/me</span><span class="chip">IsSignedIn</span></div>
+<p>Edit off-chain profile details. Replaces <code>setMyName</code>.</p>
+<h5>Request</h5><pre><code>{ "full_name": "Efua Mensah", "phone": "+233240000000", "notify": { "email": true, "sms": true } }</code></pre>
+<h5>Response 200</h5><p>Updated <a href="#obj-me">Me</a>.</p>
+<h5>Errors</h5><p><code>400 VALIDATION</code> (name 2–120 chars; phone E.164 <code>^\+233\d{9}$</code> or other country codes).</p></div>
+
+<div class="ep post"><div class="ep-head"><span class="m post">POST</span><span class="path">/auth/wallet/nonce</span><span class="chip">IsSignedIn</span></div>
+<h5>Request</h5><pre><code>{ "address": "0x28a8746E75304c0780E011BEd21C72cD78cd535E" }</code></pre>
+<h5>Response 200</h5><pre><code>{ "nonce": "f3K9qzL2xY8wPm1R",
+  "expires_at": "2026-11-20T10:10:00Z",
+  "message": "landchain.example wants you to sign in with your Ethereum account:\n0x28a8746E75304c0780E011BEd21C72cD78cd535E\n\nLink this wallet to your LandChain account. This does not send a transaction or cost anything.\n\nURI: https://landchain.example\nVersion: 1\nChain ID: 1337\nNonce: f3K9qzL2xY8wPm1R\nIssued At: 2026-11-20T10:00:00Z\nExpiration Time: 2026-11-20T10:10:00Z" }</code></pre>
+<h5>Errors</h5><p><code>400 VALIDATION</code> bad address · <code>409 WALLET_ALREADY_LINKED</code> profile already has a wallet · <code>409 WALLET_IN_USE</code> address linked to another profile.</p></div>
+
+<div class="ep post"><div class="ep-head"><span class="m post">POST</span><span class="path">/auth/wallet/verify</span><span class="chip">IsSignedIn</span></div>
+<p>Checks the <code>personal_sign</code> signature and links the address.</p>
+<h5>Request</h5><pre><code>{ "message": "&lt;exact message from /nonce&gt;", "signature": "0x5f1c…1b" }</code></pre>
+<h5>Response 200</h5><p>Updated <a href="#obj-me">Me</a> (with <code>wallet_address</code>, <code>public_id</code>, on-chain <code>identity</code> read immediately from <code>profileOf</code>).</p>
+<h5>Errors</h5><p><code>400 NONCE_INVALID</code> unknown, used or expired · <code>400 SIGNATURE_INVALID</code> recovered address differs · <code>409 WALLET_IN_USE</code> · <code>409 WALLET_IS_OFFICER</code> the address holds a Lands Commission role on chain.</p></div>
+
+<div class="ep get"><div class="ep-head"><span class="m get">GET</span><span class="path">/me/parcels</span><span class="chip">IsSignedIn</span></div>
+<p>Parcels whose current owner is me (My Parcels page), plus my pending and rejected applications.</p>
+<h5>Query</h5><p><code>?include=owned,applications,past</code> (default <code>owned,applications</code>; <code>past</code> adds parcels I used to own).</p>
+<h5>Response 200</h5><pre><code>{ "owned": [ Parcel list item, … ],
+  "applications": [ Parcel list item with status pending|rejected, … ],
+  "past": [],
+  "totals": { "count": 2, "acres": "3.10" } }</code></pre></div>
+
+<div class="ep get"><div class="ep-head"><span class="m get">GET</span><span class="path">/me/notifications</span><span class="chip">IsSignedIn</span></div>
+<p>Notifications addressed to my public ID, plus those addressed to each of my roles (<code>role:Registrar</code>, <code>role:Identity officer</code>), plus new enquiries about my parcels (text "New enquiry about GA-BRK-0003 from Kojo Appiah. Open the title to read it."). Newest first.</p>
+<h5>Query</h5><p><code>?unread=true</code>, <code>?before=&lt;iso&gt;</code>, <code>?page_size=8</code> (bell shows 8).</p>
+<h5>Response 200</h5><pre><code>{ "count": 14, "unread": 2, "next": "…", "previous": null, "results": [ Notification, … ] }</code></pre></div>
+
+<div class="ep post"><div class="ep-head"><span class="m post">POST</span><span class="path">/me/notifications/read</span><span class="chip">IsSignedIn</span></div>
+<h5>Request</h5><pre><code>{ "ids": ["ntf_01JD…"] }       // or { "all": true }</code></pre>
+<h5>Response 200</h5><pre><code>{ "unread": 0 }</code></pre></div>
+
+<h3 id="ep-identity">9.3 Identity (IdentityRegistry)</h3>
+
+<div class="ep post"><div class="ep-head"><span class="m post">POST</span><span class="path">/identity/submit</span><span class="chip">HasWallet · citizen</span><span class="chip chain">IdentityRegistry.submitProfile</span></div>
+<p>Prepares the citizen's <code>submitProfile(cardHash, citizen)</code> transaction. The card number is hashed in the browser (<code>hashCard</code>) and only the hash is sent, as today. Also allowed after a rejection (resubmit).</p>
+<h5>Request</h5><pre><code>{ "card_hash": "0x8b3e5c…d2",          // keccak256("landchain-card:GHA-700000006-6")
+  "citizenship": "citizen",             // "citizen" | "non-citizen"
+  "full_name": "Efua Mensah" }          // optional; saved to the profile, never on chain</code></pre>
+<h5>Pre-checks (same as the contract)</h5><ul>
+<li>caller's wallet is not an officer → else <code>422 CHAIN_REVERT</code> "Only citizens can submit a profile"</li>
+<li>hash is 32 bytes and not zero → "Card hash is empty"</li>
+<li>status not verified → "Identity already verified"; not pending → "Your profile is already waiting for review"</li>
+<li><code>cardOwner(hash)</code> is zero or me → "This Ghana Card is already linked to another profile"</li></ul>
+<h5>Response 201</h5><pre><code>{ "intent": TxIntent (signer "wallet", status "awaiting_signature", args_label "0x8b3e5c…, citizen") }</code></pre>
+<p>The UI then sends <code>intent.tx</code> with MetaMask and calls <a href="#ep-intents"><code>POST /chain/intents/{id}/submitted</code></a>, or on the local demo <code>POST /chain/intents/{id}/dev-sign</code>.</p></div>
+
+<div class="ep get"><div class="ep-head"><span class="m get">GET</span><span class="path">/identities</span><span class="chip">IsOfficer</span></div>
+<p>People with an on-chain profile. Default filter is the identity queue.</p>
+<h5>Query</h5><p><code>?status=pending</code> (default) <code>|verified|rejected|none</code>, <code>?q=</code> name or public ID.</p>
+<h5>Response 200</h5><pre><code>{ "count": 1, "results": [
+  { "public_id": "GH-5e0a77c1", "name": "Kwabena Ofori", "address": "0x3e5e…f9a9",
+    "status": "pending", "citizenship": "citizen", "card_hash": "0x…",
+    "submitted_at": "…", "email": "kwabena@demo.landchain.local", "phone": null } ] }</code></pre></div>
+
+<div class="ep get"><div class="ep-head"><span class="m get">GET</span><span class="path">/identities/lookup</span><span class="chip">IsSignedIn</span></div>
+<p>Used by the Transfer dialog: the owner types the buyer's public ID and sees only whether they can receive a title (PROJECT_CONTEXT P1 #7). No name is returned.</p>
+<h5>Query</h5><p><code>?public_id=GH-9c2a41d0</code></p>
+<h5>Response 200</h5><pre><code>{ "public_id": "GH-9c2a41d0", "exists": true, "verified": true, "is_you": false }</code></pre>
+<h5>Errors</h5><p><code>404 NOT_FOUND</code> unknown public ID (return <code>{"exists": false}</code> with 200 if you prefer not to leak existence through status codes; pick one and keep it).</p></div>
+
+<div class="ep post"><div class="ep-head"><span class="m post">POST</span><span class="path">/identities/{public_id}/verify</span><span class="chip">IsIdentityOfficer</span><span class="chip chain">IdentityRegistry.verifyProfile</span></div>
+<p>Signed by the identity-officer role wallet.</p>
+<h5>Request</h5><pre><code>{ "note": "Checked against NIA record" }     // optional, stored in OfficerAction only</code></pre>
+<h5>Query</h5><p><code>?wait=true</code> blocks until <code>confirmed</code> (timeout 30 s, then returns 202).</p>
+<h5>Response 202 (or 200 with wait)</h5><pre><code>{ "intent": TxIntent (signer "backend:id_officer", status "queued" | "confirmed", success_message "Identity verified"),
+  "identity": { "public_id": "GH-5e0a77c1", "status": "verified" } }   // identity only with 200</code></pre>
+<h5>Errors</h5><p><code>403 FORBIDDEN</code> not an identity officer · <code>404</code> unknown public ID · <code>422 CHAIN_REVERT</code> "No pending request for this person".</p></div>
+
+<div class="ep post"><div class="ep-head"><span class="m post">POST</span><span class="path">/identities/{public_id}/reject</span><span class="chip">IsIdentityOfficer</span><span class="chip chain">IdentityRegistry.rejectProfile</span></div>
+<p>Same as verify. The contract takes no reason; the optional reason is stored off chain and sent in the notification.</p>
+<h5>Request</h5><pre><code>{ "reason": "Card number does not match the name on file" }</code></pre>
+<h5>Response 202 / 200</h5><p>As verify, <code>success_message</code> "Identity rejected".</p></div>
+
+<h3 id="ep-documents">9.4 Documents vault</h3>
+
+<div class="ep post"><div class="ep-head"><span class="m post">POST</span><span class="path">/documents</span><span class="chip">HasWallet</span></div>
+<p>Upload one document before submitting an application. Django computes SHA-256 itself, stores the file at <code>parcel-documents/&lt;sha256&gt;</code> (content-addressed, so the same file uploaded twice is stored once), and returns the fingerprint to put on chain. Replaces <code>putFile</code>, which today runs <i>after</i> submission; uploading first means the file is never lost.</p>
+<h5>Request (multipart/form-data)</h5><pre><code>file      = &lt;binary&gt;                  # pdf, jpeg, png; ≤ 20 MB
+doc_type  = "Site plan"
+sha256    = "0x9f2c…e41a"               # optional: browser's hash; must equal the server's</code></pre>
+<h5>Response 201</h5><pre><code>{ "id": "doc_01JD3M…", "sha256": "0x9f2c…e41a", "doc_type": "Site plan",
+  "name": "site-plan-efua.pdf", "mime": "application/pdf", "size_bytes": 482113,
+  "status": "staged", "created_at": "…" }</code></pre>
+<h5>Errors</h5><p><code>400 VALIDATION</code> unknown doc type, empty file · <code>413 FILE_TOO_LARGE</code> · <code>415 UNSUPPORTED_MEDIA_TYPE</code> · <code>422 HASH_MISMATCH</code> browser hash differs.</p>
+<p>Staged documents not attached to a record within 7 days are deleted (job 13.5).</p></div>
+
+<div class="ep get"><div class="ep-head"><span class="m get">GET</span><span class="path">/documents/{sha256}/url</span><span class="chip">canSeePrivate for a parcel holding this fingerprint</span></div>
+<p>Signed URL to open a file (the "Open" buttons in the title record and review dialog). Replaces <code>openFile</code>.</p>
+<h5>Query</h5><p><code>?parcel_id=GA-BRK-0015</code> (required; access is checked against this parcel).</p>
+<h5>Response 200</h5><pre><code>{ "url": "https://&lt;ref&gt;.supabase.co/storage/v1/object/sign/parcel-documents/0x9f2c…?token=…",
+  "expires_in": 60, "name": "site-plan-efua.pdf", "mime": "application/pdf", "doc_type": "Site plan" }</code></pre>
+<h5>Errors</h5><p><code>403 PRIVATE</code> "Files are held by the Lands Commission. Only their fingerprints are public." · <code>404 FILE_NOT_IN_VAULT</code> "This file isn't in the vault. Seeded demo parcels have fingerprints only." · <code>404</code> fingerprint not on that parcel.</p></div>
+
+<div class="ep post"><div class="ep-head"><span class="m post">POST</span><span class="path">/parcels/{parcel_id}/documents/check</span><span class="chip">Public</span></div>
+<p>"Have a copy? Check it against the register." Hashing can stay in the browser (send only the hash, so the file never leaves the visitor's device); a multipart file is also accepted.</p>
+<h5>Request</h5><pre><code>{ "sha256": "0x9f2c…e41a" }            // or multipart file=&lt;binary&gt;</code></pre>
+<h5>Response 200</h5><pre><code>{ "match": true, "doc_type": "Site plan",
+  "message": "This file matches the registered Site plan. It hasn't been changed." }
+// no match:
+{ "match": false, "doc_type": null,
+  "message": "This file doesn't match any document registered for this parcel." }</code></pre></div>
+
+<h3 id="ep-parcels">9.5 Parcels and map</h3>
+
+<div class="ep get"><div class="ep-head"><span class="m get">GET</span><span class="path">/parcels</span><span class="chip">Public</span></div>
+<p>Map and Verify list. Current records only. Rejected parcels excluded unless asked.</p>
+<h5>Query</h5><div class="tbl"><table><tbody>
+<tr><td><code>status</code></td><td><code>pending,registered,transfer_pending</code> (default), add <code>rejected</code> to include</td></tr>
+<tr><td><code>bbox</code></td><td><code>minLng,minLat,maxLng,maxLat</code> (PostGIS <code>&amp;&amp;</code>)</td></tr>
+<tr><td><code>owner</code></td><td>public ID</td></tr>
+<tr><td><code>region</code>, <code>interest</code></td><td>exact</td></tr>
+<tr><td><code>format</code></td><td><code>json</code> (default) or <code>geojson</code></td></tr>
+<tr><td><code>ordering</code></td><td><code>parcel_id</code> (default), <code>-registered_at</code>, <code>-updated_at</code>, <code>acres</code></td></tr>
+</tbody></table></div>
+<h5>Response 200 (json)</h5><pre><code>{ "count": 14, "next": null, "previous": null, "results": [ Parcel list item, … ] }</code></pre>
+<h5>Response 200 (geojson)</h5><pre><code>{ "type": "FeatureCollection",
+  "features": [ { "type": "Feature", "id": "GA-BRK-0003",
+    "geometry": { "type": "Polygon", "coordinates": [[[-0.2281, 5.7509], …, [-0.2281, 5.7509]]] },
+    "properties": { "parcel_id": "GA-BRK-0003", "status": "registered", "title_no": 3, "acres": "2.05",
+                    "interest": "Leasehold", "holder": "Berekuso Stool", "region": "Eastern",
+                    "owner": PersonRef } } ] }</code></pre>
+<p>GeoJSON uses <code>[lng, lat]</code> order; the JSON format uses <code>[lat, lng]</code> like the UI.</p></div>
+
+<div class="ep get"><div class="ep-head"><span class="m get">GET</span><span class="path">/parcels/search</span><span class="chip">Public</span></div>
+<p>Map search box: "Parcel ID, owner ID or token #". Exact match first, then contains.</p>
+<h5>Query</h5><p><code>?q=GA-BRK-0003</code> | <code>?q=GH-7d4e</code> | <code>?q=#3</code></p>
+<h5>Response 200</h5><pre><code>{ "results": [ Parcel list item, … ], "best": "GA-BRK-0003" }</code></pre></div>
+
+<div class="ep get"><div class="ep-head"><span class="m get">GET</span><span class="path">/parcels/{parcel_id}</span><span class="chip">Public (privacy-filtered)</span></div>
+<p>Title record. Case-insensitive parcel ID. Resolves to the latest record; <code>?record_id=</code> fetches an older one.</p>
+<h5>Response 200</h5><p>A <a href="#obj-parcel">Parcel (detail)</a>.</p>
+<h5>Errors</h5><p><code>404 NOT_FOUND</code> "No parcel called GA-BRK-0099."</p></div>
+
+<div class="ep get"><div class="ep-head"><span class="m get">GET</span><span class="path">/parcels/{parcel_id}/history</span><span class="chip">Public</span></div>
+<p>On-chain history, oldest first (block order).</p>
+<h5>Response 200</h5><pre><code>{ "parcel_id": "GA-BRK-0001", "results": [ HistoryEvent, … ] }</code></pre></div>
+
+<div class="ep get"><div class="ep-head"><span class="m get">GET</span><span class="path">/parcels/next-id</span><span class="chip">Public</span></div>
+<p>Suggests the next free parcel ID (Register page placeholder; today it counts up from 15).</p>
+<h5>Query</h5><p><code>?prefix=GA-BRK</code></p>
+<h5>Response 200</h5><pre><code>{ "parcel_id": "GA-BRK-0015" }</code></pre></div>
+
+<div class="ep post"><div class="ep-head"><span class="m post">POST</span><span class="path">/parcels/boundary-check</span><span class="chip">Public</span></div>
+<p>Live check while drawing: area, plots, overlap, Ghana box, duplicate boundary. Replaces <code>validateBoundary</code> and <code>areaAcres</code>.</p>
+<h5>Request</h5><pre><code>{ "pillars": [[5.750912, -0.228113], [5.751204, -0.227401], [5.750633, -0.227088]],
+  "ignore_parcel_id": null }</code></pre>
+<h5>Response 200</h5><pre><code>{ "ok": false,
+  "acres": "0.62", "acres_x100": 62,
+  "plots_100x70ft": "3.9",               // acres ÷ (100 × 70 × 0.092903 / 4046.8564)
+  "pillar_count": 3,
+  "inside_ghana": true,
+  "overlaps": "GA-BRK-0004",             // null if clear
+  "duplicate_boundary": false,
+  "error": "Boundary overlaps neighbouring parcel GA-BRK-0004" }</code></pre>
+<p>Possible <code>error</code> values: "A boundary needs at least 3 corner pillars", "A boundary can have at most 32 corner pillars", "All pillars must be inside Ghana", "Boundary overlaps neighbouring parcel …", "This boundary is already registered".</p></div>
+
+<div class="ep get"><div class="ep-head"><span class="m get">GET</span><span class="path">/stats</span><span class="chip">Public</span></div>
+<p>"Register snapshot" card and map filter counts.</p>
+<h5>Response 200</h5><pre><code>{ "registered_titles": 11, "applications_pending": 2, "completed_transfers": 2, "title_holders": 5,
+  "by_status": { "registered": 10, "transfer_pending": 1, "pending": 2, "rejected": 0 },
+  "block": 212 }</code></pre></div>
+
+<h3 id="ep-applications">9.6 Applications (registration)</h3>
+
+<div class="ep post"><div class="ep-head"><span class="m post">POST</span><span class="path">/applications</span><span class="chip">IsVerifiedCitizen</span><span class="chip chain">TitleRegistry.submitApplication</span></div>
+<p>Prepares the application transaction from the Register Land form. The server converts degrees to micro-degrees, computes <code>acresX100</code>, uppercases plan number and GPS address, and puts the staged documents' types and fingerprints in <code>docs</code> (file names stay off chain).</p>
+<h5>Request</h5><pre><code>{ "parcel_id": "GA-BRK-0015",
+  "interest": "Leasehold",
+  "holder": "Berekuso Stool",
+  "region": "Eastern",
+  "location": "Berekuso, Eastern Region",      // optional; default "Berekuso, {region} Region"
+  "plan_number": "SER B4115/26",
+  "gps_address": "EA-1805-5795",               // optional
+  "pillars": [[5.752101, -0.229004], [5.752390, -0.228310], [5.751822, -0.228011], [5.751530, -0.228702]],
+  "documents": ["doc_01JD3M…", "doc_01JD3N…", "doc_01JD3P…"] }</code></pre>
+<h5>Validation (400 VALIDATION, field_errors)</h5><ul>
+<li><code>parcel_id</code> matches <code>AA-AAA-0000</code> → "Parcel ID must look like GA-BRK-0015"</li>
+<li><code>holder</code> non-empty → "Name the allodial holder"; <code>plan_number</code> non-empty → "Add the regional plan number from the site plan"</li>
+<li><code>gps_address</code> empty or <code>^[A-Z]{2}-\d{3,4}-\d{4}$</code> → "Format: two letters, then numbers, e.g. EA-1805-5795"</li>
+<li>pillars 3–32, inside Ghana, no overlap (boundary-check rules)</li>
+<li>documents: each owned by the caller and staged; Site plan, Indenture and Search report present → "Still needed: Indenture, Search report."</li></ul>
+<h5>Chain pre-checks (422 CHAIN_REVERT)</h5><p>"Verify your identity before registering land", "Parcel ID GA-BRK-0015 is already used", "This boundary is already registered", "Area must be greater than zero".</p>
+<h5>Response 201</h5><pre><code>{ "intent": TxIntent (action "submitApplication", args_label "\"GA-BRK-0015\", 4 pillars",
+                      success_message "Application submitted"),
+  "preview": { "parcel_id": "GA-BRK-0015", "acres": "1.30", "acres_x100": 130,
+               "docs": [ { "doc_type": "Site plan", "sha256": "0x…" }, … ] } }</code></pre>
+<p>On <code>confirmed</code>, <code>intent.result</code> = <code>{"application_id": "APP-15", "record_id": 15, "parcel_id": "GA-BRK-0015"}</code> and the documents become <code>attached</code>. The UI then shows "Application GA-BRK-0015 submitted" with the 4 next steps.</p></div>
+
+<div class="ep get"><div class="ep-head"><span class="m get">GET</span><span class="path">/applications</span><span class="chip">IsSignedIn</span></div>
+<p>Officers see all; citizens see their own.</p>
+<h5>Query</h5><p><code>?decision=waiting</code> (default for officers) <code>|approved|rejected</code>, <code>?parcel_id=</code>, <code>?applicant=</code>.</p>
+<h5>Response 200</h5><pre><code>{ "count": 2, "results": [ Application + { "parcel": Parcel list item }, … ] }</code></pre></div>
+
+<div class="ep get"><div class="ep-head"><span class="m get">GET</span><span class="path">/applications/{id}</span><span class="chip">IsOfficer or applicant</span></div>
+<p>Review dialog: application, parcel detail (map, plan number, pillars, documents with <code>can_open</code>), and the fee checklist.</p>
+<h5>Response 200</h5><pre><code>{ "application": Application,
+  "parcel": Parcel (detail),
+  "fee_checklist": [
+    { "kind": "Official search", "required": false, "recorded": true,  "payment": Payment, "suggested_ghs": "163.00" },
+    { "kind": "Stamp duty", "required": true, "recorded": false, "payment": null, "suggested_ghs": null,
+      "how": "0.25% up to GH¢ 10,000, 0.5% up to GH¢ 50,000, 1% above, of the price paid", "paid_to": "Ghana Revenue Authority" },
+    { "kind": "First registration", "required": true, "recorded": false, "payment": null, "suggested_ghs": "2356.00",
+      "how": "GH¢ 1,148–1,178 per acre or part of an acre", "paid_to": "Lands Commission" } ],
+  "can_approve": false,
+  "blocked_reason": "Record the stamp duty and registration fee receipts first. The contract refuses approval without them." }</code></pre></div>
+
+<div class="ep post"><div class="ep-head"><span class="m post">POST</span><span class="path">/applications/{id}/approve</span><span class="chip">IsRegistrar</span><span class="chip chain">TitleRegistry.approveApplication</span></div>
+<p>Mints the title NFT to the applicant. Signed by the registrar role wallet.</p>
+<h5>Request</h5><pre><code>{ "note": "Site visit 18 Nov, boundary pillars confirmed" }    // optional, off chain</code></pre>
+<h5>Response 202 / 200 (?wait=true)</h5><pre><code>{ "intent": TxIntent (success_message "Registered: title NFT minted"),
+  "parcel": Parcel (detail) }        // only with 200: status "registered", title_no set</code></pre>
+<h5>Errors (422 CHAIN_REVERT)</h5><p>"Record the stamp duty receipt before approving", "Record the registration fee before approving", "This application has already been decided", "Application not found" (404), "Only the registrar can approve a registration" (403 if the caller lacks the role; this message only appears if the backend wallet lost its on-chain role, which should alert admins).</p></div>
+
+<div class="ep post"><div class="ep-head"><span class="m post">POST</span><span class="path">/applications/{id}/reject</span><span class="chip">IsRegistrar</span><span class="chip chain">TitleRegistry.rejectApplication</span></div>
+<p>The reason goes on chain (public). Tell officers in the UI not to put personal data in it.</p>
+<h5>Request</h5><pre><code>{ "reason": "Site plan not approved by Survey & Mapping" }     // required, 1–280 chars</code></pre>
+<h5>Response 202 / 200</h5><p><code>intent</code> with <code>success_message</code> "Application rejected". Frees the parcel ID and boundary.</p>
+<h5>Errors</h5><p><code>400 VALIDATION</code> / <code>422</code> "A reason is required to reject", "This application has already been decided".</p></div>
+
+<h3 id="ep-fees">9.7 Fees and payments (FeeLedger)</h3>
+
+<div class="ep get"><div class="ep-head"><span class="m get">GET</span><span class="path">/fees/schedule</span><span class="chip">Public</span></div>
+<p>From <code>fees.ts</code>. Estimates only; the source text must be shown.</p>
+<h5>Response 200</h5><pre><code>{ "kinds": [
+  { "kind": "Official search", "index": 0, "paid_to": "Lands Commission", "how": "GH¢ 163 for a land certificate search", "required_for": [] },
+  { "kind": "Stamp duty", "index": 1, "paid_to": "Ghana Revenue Authority", "how": "0.25% up to GH¢ 10,000, 0.5% up to GH¢ 50,000, 1% above, of the price paid", "required_for": ["registration"] },
+  { "kind": "First registration", "index": 2, "paid_to": "Lands Commission", "how": "GH¢ 1,148–1,178 per acre or part of an acre", "required_for": ["registration"] },
+  { "kind": "Transfer", "index": 3, "paid_to": "Lands Commission", "how": "GH¢ 973 per acre or part of an acre", "required_for": ["transfer"] } ],
+  "source": "Lands Commission fee schedule as reported by YEN.com.gh (27 Oct 2026). Stamp Duty Act 2005 (Act 689) as amended by Act 1109. Estimates: confirm with the Lands Commission and the GRA." }</code></pre></div>
+
+<div class="ep get"><div class="ep-head"><span class="m get">GET</span><span class="path">/fees/estimate</span><span class="chip">Public</span></div>
+<p>Suggested amount. Rules: search 163; stamp duty = round(price × rate), rate 0.25% if price ≤ 10,000, 0.5% if &lt; 50,000, else 1%; first registration 1,178 × max(1, ceil(acres)); transfer 973 × max(1, ceil(acres)).</p>
+<h5>Query</h5><p><code>?kind=Stamp duty&amp;acres=1.24&amp;consideration=60000</code> or <code>?kind=First registration&amp;parcel_id=GA-BRK-0015</code></p>
+<h5>Response 200</h5><pre><code>{ "kind": "Stamp duty", "suggested_ghs": "600.00", "suggested_pesewas": 60000, "basis": "1% of GH¢ 60,000.00" }</code></pre></div>
+
+<div class="ep get"><div class="ep-head"><span class="m get">GET</span><span class="path">/parcels/{parcel_id}/payments</span><span class="chip">canSeePrivate</span></div>
+<h5>Response 200</h5><pre><code>{ "parcel_id": "GA-BRK-0002", "total_ghs": "3076.00", "results": [ Payment, … ] }</code></pre>
+<h5>Errors</h5><p><code>403 PRIVATE</code> "Receipts are private. Only the owner and the Lands Commission can see what was paid for GA-BRK-0002."</p></div>
+
+<div class="ep post"><div class="ep-head"><span class="m post">POST</span><span class="path">/parcels/{parcel_id}/payments</span><span class="chip">IsRegistrar</span><span class="chip chain">FeeLedger.recordPayment</span></div>
+<p>The registrar records an official receipt from the Review Queue fee recorder. The receipt number is hashed (keccak256 of the trimmed, uppercased number) and the plain number is kept in <code>PaymentReceipt</code>. For <code>Transfer</code>, the contract binds the fee to the parcel's open transfer.</p>
+<h5>Request</h5><pre><code>{ "kind": "Stamp duty",                    // or "kind_index": 1
+  "amount_ghs": "600.00",                  // &gt; 0; if omitted, the suggested amount is used
+  "receipt_no": "GRA-SD-2026-004411",
+  "consideration_ghs": "60000.00",         // stamp duty only, off chain
+  "transfer_id": "TRF-3" }                 // optional check for Transfer: must equal the open transfer</code></pre>
+<h5>Response 202 / 200</h5><pre><code>{ "intent": TxIntent (args_label "\"GA-BRK-0015\", Stamp duty", success_message "Stamp duty receipt recorded"),
+  "payment": Payment }                     // only with 200</code></pre>
+<h5>Errors</h5><p><code>400</code> "Add the official receipt number" · <code>404</code> "Parcel GA-BRK-0099 does not exist" · <code>422 CHAIN_REVERT</code> "Amount must be greater than zero", "This receipt has already been recorded", "This fee is already recorded for the parcel", "There is no transfer waiting for this parcel", "The transfer fee is already recorded".</p></div>
+
+<h3 id="ep-transfers">9.8 Transfers of ownership</h3>
+
+<div class="ep post"><div class="ep-head"><span class="m post">POST</span><span class="path">/transfers</span><span class="chip">IsVerifiedCitizen · owner</span><span class="chip chain">TitleRegistry.requestTransfer</span></div>
+<p>The owner asks to record a new owner (sale or gift agreed off the platform). The buyer is given by public ID; the server resolves the address.</p>
+<h5>Request</h5><pre><code>{ "parcel_id": "GA-BRK-0002", "to_public_id": "GH-9c2a41d0" }</code></pre>
+<h5>Errors</h5><p><code>404</code> "Pick the new owner" (unknown public ID) · <code>422 CHAIN_REVERT</code> "Only the owner can transfer this title", "Only a registered title with no pending transfer can be transferred", "You already own this title", "The new owner must have a verified identity".</p>
+<h5>Response 201</h5><pre><code>{ "intent": TxIntent (signer "wallet", args_label "\"GA-BRK-0002\", GH-9c2a41d0",
+                      success_message "Transfer requested: waiting for the registrar") }</code></pre>
+<p>On confirm, <code>result</code> = <code>{"transfer_id": "TRF-4", "parcel_id": "GA-BRK-0002"}</code>.</p></div>
+
+<div class="ep post"><div class="ep-head"><span class="m post">POST</span><span class="path">/transfers/{id}/cancel</span><span class="chip">HasWallet · requester</span><span class="chip chain">TitleRegistry.cancelTransfer</span></div>
+<h5>Request</h5><pre><code>{}</code></pre>
+<h5>Response 201</h5><p><code>intent</code> (wallet), <code>success_message</code> "Transfer cancelled".</p>
+<h5>Errors</h5><p><code>422</code> "Only the owner who asked can cancel this transfer", "This transfer has already been decided", <code>404</code> "Transfer not found".</p></div>
+
+<div class="ep get"><div class="ep-head"><span class="m get">GET</span><span class="path">/transfers</span><span class="chip">IsSignedIn</span></div>
+<p>Officers see all; citizens see transfers where they are <code>from</code> or <code>to</code>.</p>
+<h5>Query</h5><p><code>?decision=waiting</code>, <code>?parcel_id=</code>, <code>?role=from|to</code></p>
+<h5>Response 200</h5><pre><code>{ "count": 1, "results": [ TransferRequest, … ] }</code></pre></div>
+
+<div class="ep get"><div class="ep-head"><span class="m get">GET</span><span class="path">/transfers/{id}</span><span class="chip">IsOfficer, from or to</span></div>
+<p>Transfer review dialog.</p>
+<h5>Response 200</h5><pre><code>{ "transfer": TransferRequest,
+  "parcel": Parcel (detail),
+  "fee_checklist": [ { "kind": "Transfer", "required": true, "recorded": false, "suggested_ghs": "973.00", … } ],
+  "can_approve": false,
+  "blocked_reason": "Record the transfer fee before approving",
+  "reminder": "Check the signed indenture before approving. Approving moves the title NFT to the new owner and adds them to the on-chain owner history." }</code></pre></div>
+
+<div class="ep post"><div class="ep-head"><span class="m post">POST</span><span class="path">/transfers/{id}/approve</span><span class="chip">IsRegistrar</span><span class="chip chain">TitleRegistry.approveTransfer</span></div>
+<h5>Request</h5><pre><code>{ "note": "Indenture dated 12 Nov 2026 sighted" }          // optional</code></pre>
+<h5>Response 202 / 200</h5><p><code>intent</code>, <code>success_message</code> "Transfer approved: title moved to the new owner"; with 200 also the updated <code>parcel</code>.</p>
+<h5>Errors</h5><p><code>422</code> "Record the transfer fee before approving", "The new owner must have a verified identity", "This transfer has already been decided".</p></div>
+
+<div class="ep post"><div class="ep-head"><span class="m post">POST</span><span class="path">/transfers/{id}/reject</span><span class="chip">IsRegistrar</span><span class="chip chain">TitleRegistry.rejectTransfer</span></div>
+<h5>Request</h5><pre><code>{ "reason": "Indenture not signed by all family heads" }   // required, public on chain</code></pre>
+<h5>Response 202 / 200</h5><p><code>intent</code>, <code>success_message</code> "Transfer rejected".</p></div>
+
+<h3 id="ep-intents">9.9 Chain intents</h3>
+
+<div class="ep get"><div class="ep-head"><span class="m get">GET</span><span class="path">/chain/intents/{id}</span><span class="chip">creator or IsOfficer</span></div>
+<p>Poll every 1–2 s until <code>confirmed</code>, <code>reverted</code>, <code>failed</code> or <code>expired</code>. Replaces the toast flow in <code>chainAct</code> ("Sending to Local Ganache…" → "Confirmed in block 213 · 0x8f1c2a…").</p>
+<h5>Response 200</h5><p>A <a href="#obj-intent">TxIntent</a>.</p></div>
+
+<div class="ep post"><div class="ep-head"><span class="m post">POST</span><span class="path">/chain/intents/{id}/submitted</span><span class="chip">creator</span></div>
+<p>The UI reports the hash MetaMask returned. The backend checks the transaction matches the intent and starts watching its receipt.</p>
+<h5>Request</h5><pre><code>{ "tx_hash": "0x8f1c2a…" }</code></pre>
+<h5>Response 200</h5><p><code>TxIntent</code> with status <code>submitted</code> (or already <code>mined</code>).</p>
+<h5>Errors</h5><p><code>409 INTENT_NOT_AWAITING</code> · <code>410 INTENT_EXPIRED</code> · <code>422 TX_MISMATCH</code> "This transaction is not the one prepared for this action." · <code>404 TX_NOT_FOUND</code> after 60 s of retries.</p></div>
+
+<div class="ep post"><div class="ep-head"><span class="m post">POST</span><span class="path">/chain/intents/{id}/rejected-by-wallet</span><span class="chip">creator</span></div>
+<p>The user cancelled in MetaMask (error code 4001). Marks the intent <code>failed</code> with "You cancelled the transaction in your wallet" so it shows in the activity log as the frontend does today.</p>
+<h5>Request</h5><pre><code>{ "code": 4001, "message": "User denied transaction signature." }</code></pre></div>
+
+<div class="ep post"><div class="ep-head"><span class="m post">POST</span><span class="path">/chain/intents/{id}/dev-sign</span><span class="chip">creator · local chain only</span></div>
+<p>Sends the prepared transaction from Ganache's unlocked account (no wallet). <code>404</code> unless <code>CHAIN_ALLOW_UNLOCKED_SIGNING=true</code> and chain 1337; <code>403 CANNOT_SIGN</code> "This account can't sign here. Connect it in MetaMask or pick a demo account." if the address isn't unlocked.</p>
+<h5>Response 200</h5><p><code>TxIntent</code> (<code>signer</code> becomes <code>dev_unlocked</code>; usually already <code>mined</code>).</p></div>
+
+<h3 id="ep-review">9.10 Review queue</h3>
+
+<div class="ep get"><div class="ep-head"><span class="m get">GET</span><span class="path">/review/queue</span><span class="chip">IsOfficer</span></div>
+<p>The three cards of the Review Queue, with a hint for items the caller's role cannot act on ("Only the registrar can act").</p>
+<h5>Response 200</h5><pre><code>{ "acting_as": { "name": "Abena Sarpong", "roles": ["Identity officer"] },
+  "identities":   { "count": 1, "can_act": true,  "items": [ { "public_id": "GH-5e0a77c1", "name": "Kwabena Ofori", "citizenship": "citizen", "submitted_at": "…" } ] },
+  "applications": { "count": 2, "can_act": false, "items": [ { "id": "APP-13", "parcel_id": "GA-BRK-0013", "holder": "Berekuso Stool", "applicant": PersonRef, "acres": "1.10", "created_at": "…", "fees_ready": true } ] },
+  "transfers":    { "count": 1, "can_act": false, "items": [ { "id": "TRF-3", "parcel_id": "GA-BRK-0006", "from": PersonRef, "to": PersonRef, "requested_at": "…", "transfer_fee_recorded": false } ] } }</code></pre></div>
+
+<div class="ep get"><div class="ep-head"><span class="m get">GET</span><span class="path">/review/counts</span><span class="chip">IsOfficer</span></div>
+<p>Badge in the nav: items the caller can act on (<code>pendingCountFor</code>). Identity officer counts identities; registrar counts applications + transfers.</p>
+<h5>Response 200</h5><pre><code>{ "total": 3, "actionable": 1, "identities": 1, "applications": 2, "transfers": 1 }</code></pre></div>
+
+<h3 id="ep-enquiries">9.11 Enquiries</h3>
+
+<div class="ep post"><div class="ep-head"><span class="m post">POST</span><span class="path">/parcels/{parcel_id}/enquiries</span><span class="chip">Public</span></div>
+<p>"Enquire about this land". Goes to the current owner without revealing them. Not allowed on rejected parcels, by officers, or by the owner themself.</p>
+<h5>Request</h5><pre><code>{ "name": "Kojo Appiah",                     // 2–120
+  "contact": "024 000 0000",                 // phone or email, 5–160
+  "message": "I'm interested in buying this plot. Is it available?",   // 1–2000
+  "captcha_token": "…" }                     // required for anonymous callers when CAPTCHA is enabled</code></pre>
+<h5>Response 201</h5><pre><code>{ "id": "enq_01JD…", "parcel_id": "GA-BRK-0003", "status": "sent",
+  "message": "Enquiry sent to the owner. If they're interested, they'll contact you." }</code></pre>
+<p>Side effects: notification to the owner, and an email / SMS relay (job 13.3) containing the message and the enquirer's contact. The response never contains the owner's identity.</p>
+<h5>Errors</h5><p><code>400 VALIDATION</code> · <code>403 CANNOT_ENQUIRE</code> "You own this parcel." / "Lands Commission accounts can't send enquiries." · <code>409</code> rejected parcel · <code>429</code>.</p></div>
+
+<div class="ep get"><div class="ep-head"><span class="m get">GET</span><span class="path">/me/enquiries</span><span class="chip">IsSignedIn</span></div>
+<p>The owner's inbox (Enquiries section on the title record). Only enquiries addressed to my public ID.</p>
+<h5>Query</h5><p><code>?parcel_id=GA-BRK-0003</code>, <code>?status=new</code></p>
+<h5>Response 200</h5><pre><code>{ "count": 1, "new": 1, "results": [ Enquiry, … ] }</code></pre></div>
+
+<div class="ep patch"><div class="ep-head"><span class="m patch">PATCH</span><span class="path">/enquiries/{id}</span><span class="chip">recipient</span></div>
+<p>Replaces <code>markEnquiry</code> (read on hover, "Mark as answered").</p>
+<h5>Request</h5><pre><code>{ "status": "read" }          // "read" | "answered"</code></pre>
+<h5>Response 200</h5><p>The updated <code>Enquiry</code>.</p></div>
+
+<h3 id="ep-activity">9.12 Activity log and receipt</h3>
+
+<div class="ep get"><div class="ep-head"><span class="m get">GET</span><span class="path">/activity</span><span class="chip">Public (names filtered)</span></div>
+<p>Every contract call, newest first, including refused simulations (<code>RevertLog</code>) and wallet cancellations. Now shared by everyone, where today reverts are kept per browser.</p>
+<h5>Query</h5><div class="tbl"><table><tbody>
+<tr><td><code>parcel</code></td><td>substring of <code>args_label</code> (UI's "Filter by parcel")</td></tr>
+<tr><td><code>from</code></td><td>public ID</td></tr>
+<tr><td><code>contract</code></td><td><code>IdentityRegistry | TitleRegistry | FeeLedger | LandAccessControl</code></td></tr>
+<tr><td><code>status</code></td><td><code>Success | Reverted</code></td></tr>
+<tr><td><code>before</code>, <code>page_size</code></td><td>pagination</td></tr>
+</tbody></table></div>
+<h5>Response 200</h5><pre><code>{ "count": 186, "next": "…", "results": [ ActivityTx, … ],
+  "facets": { "contracts": ["IdentityRegistry", "TitleRegistry", "FeeLedger"],
+              "people": [ PersonRef, … ] } }</code></pre></div>
+
+<div class="ep get"><div class="ep-head"><span class="m get">GET</span><span class="path">/parcels/{parcel_id}/receipt</span><span class="chip">canSeePrivate</span></div>
+<p>Statement of costs. One row per distinct transaction on the parcel (an approval that also mints is one row). Gas comes from stored receipts (replaces <code>chain/gas.ts</code>).</p>
+<h5>Response 200</h5><pre><code>{ "parcel": { "parcel_id": "GA-BRK-0002", "title_no": 2, "owner": PersonRef, "plan_number": "SER B4102/25",
+              "acres": "1.24", "interest": "Customary freehold", "location": "Berekuso, Eastern Region" },
+  "fees": { "total_ghs": "3076.00", "items": [ Payment, … ] },
+  "transactions": {
+    "items": [ { "label": "Application", "tx_hash": "0x…", "signed_by": PersonRef, "block": 18,
+                 "gas_used": 512344, "gas_price_gwei": "2", "cost_eth": "0.001025", "at": "…" },
+               { "label": "Record stamp duty receipt", … },
+               { "label": "Registration", … } ],
+    "total_eth": "0.001411",
+    "owner_signed_eth": "0.001025" },
+  "chain_name": "Local Ganache",
+  "notes": [ "On Local Ganache this is test ETH with no real value. Officer transactions are paid by the Lands Commission's own wallet.",
+             "Fee amounts are what the registrar recorded from the official receipts." ] }</code></pre>
+<h5>Errors</h5><p><code>403 PRIVATE</code> "Receipts are private. Only the owner and the Lands Commission can see what was paid for GA-BRK-0002."</p></div>
+
+<h3 id="ep-admin">9.13 Admin</h3>
+
+<div class="ep get"><div class="ep-head"><span class="m get">GET</span><span class="path">/admin/officers</span><span class="chip">IsAdmin</span></div>
+<h5>Response 200</h5><pre><code>{ "results": [ { "user_id": "…", "name": "Abena Sarpong", "email": "abena@…", "roles": ["id_officer"], "since": "…" } ],
+  "signers": { "registrar": "0x90f8…c9c1", "id_officer": "0xffcf…09f0", "admin": "0x90f8…c9c1" } }</code></pre></div>
+
+<div class="ep post"><div class="ep-head"><span class="m post">POST</span><span class="path">/admin/officers</span><span class="chip">IsAdmin</span></div>
+<p>Give a Supabase user an officer role. Off chain only: the person acts through the role wallet. Syncs <code>app_metadata.landchain_roles</code>.</p>
+<h5>Request</h5><pre><code>{ "email": "kwame@lands.gov.gh", "roles": ["registrar"] }    // or "user_id"</code></pre>
+<h5>Response 200</h5><p>The officer row.</p>
+<h5>Errors</h5><p><code>404</code> no Supabase user with that email · <code>409 OFFICER_HAS_WALLET</code> a person with a linked citizen wallet holding titles can't be an officer (decide in 18.4).</p></div>
+
+<div class="ep delete"><div class="ep-head"><span class="m delete">DELETE</span><span class="path">/admin/officers/{user_id}</span><span class="chip">IsAdmin</span></div>
+<p>Removes all officer roles. <code>?role=registrar</code> removes one. Returns <code>204</code>.</p></div>
+
+<div class="ep post"><div class="ep-head"><span class="m post">POST</span><span class="path">/admin/chain/roles</span><span class="chip">IsAdmin</span><span class="chip chain">LandAccessControl.grantRole / revokeRole</span></div>
+<p>Rotate a role wallet on chain (e.g. new registrar key). Signed by the admin wallet.</p>
+<h5>Request</h5><pre><code>{ "action": "grant", "role": "REGISTRAR_ROLE", "address": "0x…" }      // action grant | revoke</code></pre>
+<h5>Response 202</h5><p><code>{ "intent": TxIntent }</code></p></div>
+
+<div class="ep get"><div class="ep-head"><span class="m get">GET</span><span class="path">/admin/signers</span><span class="chip">IsAdmin</span></div>
+<h5>Response 200</h5><pre><code>{ "results": [ { "role": "registrar", "address": "0x90f8…c9c1", "balance_eth": "998.41", "pending_nonce": 57,
+                 "has_role_on_chain": true, "queue_depth": 0, "low_balance": false } ] }</code></pre></div>
+
+<div class="ep post"><div class="ep-head"><span class="m post">POST</span><span class="path">/admin/indexer/resync</span><span class="chip">IsAdmin</span></div>
+<p>Wipe the projection for the current chain and re-index from <code>startBlock</code>. Use after <code>npm run chain:fresh</code> + <code>setup:all</code>.</p>
+<h5>Request</h5><pre><code>{ "from_block": 0 }          // optional</code></pre>
+<h5>Response 202</h5><pre><code>{ "job_id": "…", "from_block": 0, "head_block": 212 }</code></pre></div>
+
+<h2 id="errors">10. Errors and revert catalog</h2>
+<h3>10.1 Error codes</h3>
+<div class="tbl"><table>
+<thead><tr><th>HTTP</th><th>code</th><th>When</th></tr></thead>
+<tbody>
+<tr><td>400</td><td><code>VALIDATION</code></td><td>Bad body or query; <code>field_errors: {"plan_number": ["Add the regional plan number from the site plan"]}</code></td></tr>
+<tr><td>400</td><td><code>NONCE_INVALID</code>, <code>SIGNATURE_INVALID</code></td><td>Wallet linking</td></tr>
+<tr><td>401</td><td><code>TOKEN_EXPIRED</code>, <code>TOKEN_INVALID</code>, <code>AUTH_REQUIRED</code></td><td>Missing or bad Supabase token</td></tr>
+<tr><td>403</td><td><code>FORBIDDEN</code></td><td>Role missing ("Only the registrar can approve a registration")</td></tr>
+<tr><td>403</td><td><code>PRIVATE</code></td><td>Privacy rule blocks documents / fees / receipt</td></tr>
+<tr><td>403</td><td><code>WALLET_REQUIRED</code>, <code>IDENTITY_NOT_VERIFIED</code>, <code>CANNOT_SIGN</code>, <code>CANNOT_ENQUIRE</code>, <code>MFA_REQUIRED</code></td><td>Precondition on the caller</td></tr>
+<tr><td>404</td><td><code>NOT_FOUND</code>, <code>FILE_NOT_IN_VAULT</code>, <code>TX_NOT_FOUND</code></td><td></td></tr>
+<tr><td>409</td><td><code>WALLET_IN_USE</code>, <code>WALLET_ALREADY_LINKED</code>, <code>WALLET_IS_OFFICER</code>, <code>INTENT_NOT_AWAITING</code>, <code>IDEMPOTENCY_CONFLICT</code></td><td>State conflict off chain</td></tr>
+<tr><td>410</td><td><code>INTENT_EXPIRED</code></td><td></td></tr>
+<tr><td>413 / 415</td><td><code>FILE_TOO_LARGE</code>, <code>UNSUPPORTED_MEDIA_TYPE</code></td><td>Uploads</td></tr>
+<tr><td>422</td><td><code>CHAIN_REVERT</code></td><td>The contract refused (simulation or mined revert). <code>message</code> = <code>revert_reason</code> = the Solidity <code>require</code> sentence, shown to the user as is.</td></tr>
+<tr><td>422</td><td><code>HASH_MISMATCH</code>, <code>TX_MISMATCH</code></td><td></td></tr>
+<tr><td>429</td><td><code>RATE_LIMITED</code></td><td></td></tr>
+<tr><td>503</td><td><code>CHAIN_UNAVAILABLE</code></td><td>RPC unreachable: "Can't reach http://127.0.0.1:7545. Is the chain running?"; contracts missing: "This chain doesn't have the current LandChain contracts…"</td></tr>
+<tr><td>503</td><td><code>SIGNER_UNAVAILABLE</code></td><td>Role wallet missing, unfunded, or lost its on-chain role</td></tr>
+</tbody></table></div>
+<p>Revert reason extraction: port <code>revertReason()</code> from <code>chain/client.ts</code>. With web3.py, catch <code>ContractLogicError</code> and use <code>e.message</code>, stripping the prefixes <code>"execution reverted: "</code>, <code>"VM Exception while processing transaction: revert "</code>, <code>"reverted with reason string '…'"</code>. OpenZeppelin custom errors (<code>ERC721…</code>, <code>AccessControl…</code>) arrive as 4-byte selectors: decode with the ABI and map to a sentence.</p>
+
+<h3>10.2 Every contract <code>require</code> message</h3>
+<div class="tbl"><table>
+<thead><tr><th>Contract.function</th><th>Message (exact)</th><th>API mapping</th></tr></thead>
+<tbody>
+<tr><td rowspan="5">IdentityRegistry.submitProfile</td><td>Only citizens can submit a profile</td><td>422 (pre-check: 409 <code>WALLET_IS_OFFICER</code> at link time)</td></tr>
+<tr><td>Card hash is empty</td><td>400</td></tr>
+<tr><td>Identity already verified</td><td>422</td></tr>
+<tr><td>Your profile is already waiting for review</td><td>422</td></tr>
+<tr><td>This Ghana Card is already linked to another profile</td><td>422</td></tr>
+<tr><td>IdentityRegistry.verifyProfile / rejectProfile</td><td>Only an identity officer can do this · No pending request for this person</td><td>403 · 422</td></tr>
+<tr><td rowspan="10">TitleRegistry.submitApplication</td><td>Verify your identity before registering land</td><td>403 <code>IDENTITY_NOT_VERIFIED</code></td></tr>
+<tr><td>Parcel ID must look like GA-BRK-0015</td><td>400</td></tr>
+<tr><td>Parcel ID {id} is already used</td><td>422</td></tr>
+<tr><td>Latitudes and longitudes must pair up</td><td>400 (never happens: server builds both arrays)</td></tr>
+<tr><td>A boundary needs at least 3 corner pillars</td><td>400</td></tr>
+<tr><td>A boundary can have at most 32 corner pillars</td><td>400</td></tr>
+<tr><td>All pillars must be inside Ghana</td><td>400</td></tr>
+<tr><td>This boundary is already registered</td><td>422</td></tr>
+<tr><td>Area must be greater than zero</td><td>400</td></tr>
+<tr><td>Name the allodial holder · Add the regional plan number from the site plan</td><td>400</td></tr>
+<tr><td>TitleRegistry.approveApplication</td><td>Only the registrar can approve a registration · Application not found · This application has already been decided · Record the stamp duty receipt before approving · Record the registration fee before approving</td><td>403 · 404 · 422 · 422 · 422</td></tr>
+<tr><td>TitleRegistry.rejectApplication</td><td>Only the registrar can reject a registration · A reason is required to reject · (as above)</td><td>403 · 400</td></tr>
+<tr><td>TitleRegistry.requestTransfer</td><td>Parcel does not exist · Only the owner can transfer this title · Only a registered title with no pending transfer can be transferred · You already own this title · The new owner must have a verified identity</td><td>404 · 422 ×4</td></tr>
+<tr><td>TitleRegistry.cancelTransfer</td><td>Transfer not found · This transfer has already been decided · Only the owner who asked can cancel this transfer</td><td>404 · 422 · 422</td></tr>
+<tr><td>TitleRegistry.approveTransfer</td><td>Only the registrar can approve a transfer · The new owner must have a verified identity · Record the transfer fee before approving</td><td>403 · 422 · 422</td></tr>
+<tr><td>TitleRegistry.rejectTransfer</td><td>Only the registrar can reject a transfer · A reason is required to reject</td><td>403 · 400</td></tr>
+<tr><td>TitleRegistry.setFeeLedger</td><td>Only the admin can connect the fee ledger · Fee ledger already set</td><td>Not exposed (migration only)</td></tr>
+<tr><td>TitleRegistry transfers (ERC-721)</td><td>Titles move only through a registrar-approved transfer</td><td>Not exposed</td></tr>
+<tr><td>FeeLedger.recordPayment</td><td>Only the registrar can record a payment · Parcel does not exist · Amount must be greater than zero · Add the official receipt number · This receipt has already been recorded · There is no transfer waiting for this parcel · The transfer fee is already recorded · This fee is already recorded for the parcel</td><td>403 · 404 · 400 · 400 · 422 ×4</td></tr>
+<tr><td>FeeLedger.getPayment</td><td>Payment not found</td><td>404</td></tr>
+</tbody></table></div>
+
+<h2 id="privacy">11. Privacy rules (server side)</h2>
+<p>Port of <code>privacy.ts</code>, implemented once in <code>landchain/core/privacy.py</code> and used by every serializer.</p>
+<pre><code>def can_see_private(viewer: Profile | None, parcel: Parcel) -&gt; bool:
+    """Officers and the parcel's own owner, applicant or past owners see its private details."""
+    if viewer is None: return False
+    if viewer.is_officer: return True
+    pid = viewer.public_id
+    return pid is not None and (pid == parcel.owner_public_id
+                                or pid in parcel.owner_public_ids
+                                or pid == parcel.applicant_public_id)
+
+def shown_name(viewer: Profile | None, person_public_id: str) -&gt; str | None:
+    """Officers' names always (they act officially); everyone else's only to officers and themselves."""
+    target = profile_by_public_id(person_public_id)        # role wallets map to "Lands Commission registrar" etc.
+    if target is None: return None
+    if target.is_officer_wallet: return target.role_label
+    if viewer and (viewer.is_officer or viewer.public_id == person_public_id): return target.full_name or None
+    return None</code></pre>
+<div class="tbl"><table>
+<thead><tr><th>Field</th><th>Public</th><th>Owner / past owner / applicant</th><th>Officer</th></tr></thead>
+<tbody>
+<tr><td>Parcel record, status, boundary, plan no., GPS address, holder, interest, title no.</td><td>✓</td><td>✓</td><td>✓</td></tr>
+<tr><td>Owner &amp; owner history public IDs, on-chain history, document types &amp; fingerprints</td><td>✓</td><td>✓</td><td>✓</td></tr>
+<tr><td>Person names</td><td>officers only</td><td>own name + officers</td><td>all</td></tr>
+<tr><td>Document files, original file names</td><td>✗</td><td>✓</td><td>✓</td></tr>
+<tr><td>Fees, receipt page, receipt hashes</td><td>✗</td><td>✓</td><td>✓</td></tr>
+<tr><td>Plain receipt numbers, consideration</td><td>✗</td><td>✗</td><td>✓</td></tr>
+<tr><td>Enquiry content</td><td>✗</td><td>current owner it was sent to</td><td>✗ (not even officers; decide in 18.5)</td></tr>
+<tr><td>Email, phone, card hash</td><td>✗</td><td>own</td><td>✓ (identity queue)</td></tr>
+<tr><td>Which officer pressed a button (OfficerAction)</td><td>✗</td><td>✗</td><td>✓</td></tr>
+</tbody></table></div>
+<p>Note: fee amounts and receipt hashes are public on chain (anyone with a node can read them). The API hides them as the UI does today; it is presentation privacy, not secrecy.</p>
+
+<h2 id="notifications">12. Notifications catalog</h2>
+<p>Created by the indexer, same texts as <code>snapshot.ts</code>.</p>
+<div class="tbl"><table>
+<thead><tr><th>Event</th><th>kind</th><th>To</th><th>Text</th><th>Relay</th></tr></thead>
+<tbody>
+<tr><td>ProfileSubmitted</td><td><code>identity_submitted</code></td><td>role:Identity officer</td><td>New identity request from GH-…</td><td>email officers (digest)</td></tr>
+<tr><td>ProfileVerified</td><td><code>identity_verified</code></td><td>person</td><td>Your identity has been verified</td><td>email/SMS</td></tr>
+<tr><td>ProfileRejected</td><td><code>identity_rejected</code></td><td>person</td><td>Your identity request was rejected (+ off-chain reason)</td><td>email/SMS</td></tr>
+<tr><td>ApplicationSubmitted</td><td><code>application_submitted</code></td><td>role:Registrar</td><td>New title application GA-BRK-0015 waiting for your review</td><td>digest</td></tr>
+<tr><td>ApplicationRejected</td><td><code>application_rejected</code></td><td>applicant</td><td>Your application GA-BRK-0015 was rejected: {reason}</td><td>email/SMS</td></tr>
+<tr><td>TitleMinted</td><td><code>title_issued</code></td><td>owner</td><td>Title GLT #15 issued for GA-BRK-0015</td><td>email/SMS</td></tr>
+<tr><td>TransferRequested</td><td><code>transfer_requested</code></td><td>role:Registrar</td><td>Transfer of GA-BRK-0006 waiting for approval</td><td>digest</td></tr>
+<tr><td>TransferRequested</td><td><code>transfer_requested_to_you</code></td><td>to</td><td>GH-… asked to transfer GA-BRK-0006 to you</td><td>email/SMS</td></tr>
+<tr><td>TransferApproved</td><td><code>transfer_received</code> / <code>transfer_approved</code></td><td>to / from</td><td>GA-BRK-0006 is now registered to you / Transfer of GA-BRK-0006 approved</td><td>email/SMS</td></tr>
+<tr><td>TransferRejected</td><td><code>transfer_rejected</code></td><td>from</td><td>Transfer of GA-BRK-0006 was rejected: {reason}</td><td>email/SMS</td></tr>
+<tr><td>PaymentRecorded</td><td><code>payment_recorded</code></td><td>payer</td><td>Stamp duty receipt of GH¢ 600.00 recorded for GA-BRK-0015</td><td>in-app</td></tr>
+<tr><td>Enquiry created</td><td><code>enquiry_received</code></td><td>owner</td><td>New enquiry about GA-BRK-0003 from Kojo Appiah. Open the title to read it.</td><td>email/SMS with message + contact</td></tr>
+</tbody></table></div>
+
+<h2 id="jobs">13. Background jobs (Celery)</h2>
+<ol>
+  <li><b>indexer.tick</b> (beat, 2 s local / 6 s Sepolia, single instance via Redis lock): section 6.5.</li>
+  <li><b>signer.send</b> (queues <code>signer.registrar</code>, <code>signer.id_officer</code>, <code>signer.admin</code>, concurrency 1): re-simulate, sign, send, store hash, hand to watcher.</li>
+  <li><b>notify.relay</b>: email (Django email backend: SMTP / Resend / SES) and SMS (Hubtel or Twilio for Ghana numbers) for notifications marked relay; retries 3× with backoff; respects <code>notify_email</code> / <code>notify_sms</code>.</li>
+  <li><b>documents.attach</b> (after each indexed <code>ApplicationSubmitted</code>): for each on-chain doc hash, mark the matching staged <code>Document</code> of the applicant <code>attached</code> with the record id. Fingerprints with no file → <code>file_available=false</code>.</li>
+  <li><b>documents.cleanup</b> (daily): delete staged files older than 7 days that never reached a record; never delete attached files.</li>
+  <li><b>intents.watch</b> (every 3 s): fetch receipts for <code>submitted</code> intents; mark <code>mined</code>/<code>reverted</code>; expire <code>awaiting_signature</code> after 15 min; <code>failed</code> if the hash is unknown after 10 min (Sepolia: check for replacement by nonce).</li>
+  <li><b>signers.health</b> (every 5 min): balance and on-chain role of each signer; alert admins.</li>
+</ol>
+
+<h2 id="settings">14. Settings and environment variables</h2>
+<div class="tbl"><table>
+<thead><tr><th>Variable</th><th>Example</th><th>Notes</th></tr></thead>
+<tbody>
+<tr><td><code>DJANGO_SECRET_KEY</code>, <code>DJANGO_DEBUG</code>, <code>ALLOWED_HOSTS</code></td><td></td><td></td></tr>
+<tr><td><code>DATABASE_URL</code></td><td><code>postgresql://postgres.&lt;ref&gt;:…@aws-0-eu-west-2.pooler.supabase.com:5432/postgres</code></td><td>Supabase session pooler or direct</td></tr>
+<tr><td><code>DB_SCHEMA</code></td><td><code>landchain</code></td><td>search_path</td></tr>
+<tr><td><code>SUPABASE_URL</code></td><td><code>https://&lt;ref&gt;.supabase.co</code></td><td></td></tr>
+<tr><td><code>SUPABASE_SERVICE_ROLE_KEY</code></td><td>secret</td><td>Storage + Admin API, server only</td></tr>
+<tr><td><code>SUPABASE_JWT_SECRET</code></td><td>secret</td><td>Only for HS256 projects</td></tr>
+<tr><td><code>SUPABASE_JWT_AUDIENCE</code></td><td><code>authenticated</code></td><td></td></tr>
+<tr><td><code>SUPABASE_DOCS_BUCKET</code></td><td><code>parcel-documents</code></td><td></td></tr>
+<tr><td><code>REDIS_URL</code></td><td><code>redis://localhost:6379/0</code></td><td>Celery broker + locks</td></tr>
+<tr><td><code>CHAIN_ID</code></td><td><code>1337</code> / <code>11155111</code></td><td></td></tr>
+<tr><td><code>RPC_URL</code></td><td><code>http://127.0.0.1:7545</code></td><td>Server-side RPC (Sepolia: Infura/Alchemy key)</td></tr>
+<tr><td><code>RPC_URL_PUBLIC</code></td><td><code>http://127.0.0.1:7545</code></td><td>Returned in <code>/config</code> for MetaMask</td></tr>
+<tr><td><code>CONTRACTS_DIR</code></td><td><code>../landchain-contracts/shared</code></td><td>Reads <code>abi/*.json</code> and <code>deployments.local.json</code>; or set the four <code>*_ADDRESS</code> vars and <code>START_BLOCK</code></td></tr>
+<tr><td><code>CHAIN_CONFIRMATIONS</code></td><td><code>0</code> local / <code>2</code> Sepolia</td><td></td></tr>
+<tr><td><code>REGISTRAR_SIGNER_KEY</code>, <code>ID_OFFICER_SIGNER_KEY</code>, <code>ADMIN_SIGNER_KEY</code></td><td>0x…</td><td>Locally Ganache deterministic keys of accounts 0, 1, 0 (printed by <code>npm run chain</code>). Production: KMS references instead.</td></tr>
+<tr><td><code>CHAIN_ALLOW_UNLOCKED_SIGNING</code></td><td><code>true</code></td><td>Local only; forced false when <code>CHAIN_ID≠1337</code></td></tr>
+<tr><td><code>DEMO_MODE</code>, <code>DEMO_PASSWORD</code></td><td><code>true</code>, <code>landchain-demo</code></td><td>Seeds and lists demo users</td></tr>
+<tr><td><code>CORS_ALLOWED_ORIGINS</code></td><td><code>http://localhost:5173</code></td><td></td></tr>
+<tr><td><code>SITE_DOMAIN</code>, <code>SITE_URI</code></td><td><code>localhost:5173</code></td><td>SIWE message domain/URI</td></tr>
+<tr><td><code>EMAIL_*</code>, <code>SMS_PROVIDER</code>, <code>SMS_API_KEY</code>, <code>SMS_SENDER_ID</code></td><td></td><td>Relay</td></tr>
+<tr><td><code>CAPTCHA_SECRET</code></td><td></td><td>Turnstile/hCaptcha for anonymous enquiries</td></tr>
+<tr><td><code>REQUIRE_OFFICER_MFA</code></td><td><code>false</code></td><td>Require <code>aal2</code> on officer writes</td></tr>
+</tbody></table></div>
+<p>Frontend additions: <code>VITE_API_URL</code>, <code>VITE_SUPABASE_URL</code>, <code>VITE_SUPABASE_ANON_KEY</code>. <code>VITE_CHAIN_ID</code> / <code>VITE_RPC_URL</code> can be replaced by <code>GET /config</code>.</p>
+
+<h2 id="layout">15. Django project layout</h2>
+<pre><code>land-backend/
+├─ manage.py
+├─ pyproject.toml          # django~=5.1, djangorestframework, drf-spectacular, django-cors-headers, django-ratelimit,
+│                          # psycopg[binary], dj-database-url, PyJWT[crypto], supabase, web3~=7, eth-account,
+│                          # celery[redis], shapely, pyproj, python-ulid, pytest-django, factory-boy
+├─ config/                 # settings.py, urls.py (/api/v1/ + /api/v1/schema/ + /api/v1/docs/), celery.py
+└─ landchain/
+   ├─ core/                # errors.py (exception handler + codes), pagination.py, privacy.py, ids.py, permissions.py, idempotency.py
+   ├─ accounts/            # Profile, WalletNonce, auth.py (SupabaseJWTAuthentication), SIWE views, /me, admin officers
+   ├─ chain/               # web3 client, contracts loader (ABIs + addresses), encoding.py (6.4), simulate.py,
+   │                       # TxIntent, OfficerAction, RevertLog, signer tasks, intents views, /config, /chain/status
+   ├─ indexer/             # IndexerCursor, ChainBlock, ChainEvent, ChainTx, handlers per event, run_indexer command
+   ├─ registry/            # projection models: ChainIdentity, ChainRole, Parcel, ParcelDoc, OwnerHistory, Application,
+   │                       # TransferRequest, HistoryEvent; parcels/applications/transfers/identity views; geo.py
+   ├─ fees/                # Payment (projection), PaymentReceipt, schedule.py (port of fees.ts), views
+   ├─ documents/           # Document, storage.py (Supabase Storage), upload/url/check views, attach/cleanup tasks
+   ├─ enquiries/           # Enquiry, views, relay task
+   ├─ notifications/       # Notification, NotificationRead, views, relay
+   └─ demo/                # seed_demo_users command, /dev/demo-accounts</code></pre>
+<p>Management commands: <code>migrate</code>, <code>run_indexer</code>, <code>seed_demo_users</code>, <code>sync_contracts --from ../landchain-contracts/shared</code>, <code>check_signers</code>.</p>
+<p>Sketch of a chain write, officer side:</p>
+<pre><code># landchain/registry/views.py
+class ApproveApplication(APIView):
+    permission_classes = [IsRegistrar]
+    def post(self, request, app_id):
+        app = get_object_or_404(Application, app_id=parse_id(app_id, "APP"))
+        intent = chain.write(
+            signer="registrar", contract="TitleRegistry", function="approveApplication",
+            args=[app.app_id], label=f"APP-{app.app_id}", success="Registered: title NFT minted",
+            by=request.user.profile, target=f"APP-{app.app_id}", note=request.data.get("note"),
+            idempotency_key=request.headers.get("Idempotency-Key"),
+        )   # simulates now; raises ChainRevert(reason) → 422 and writes RevertLog; else queues signer.send
+        return intent_response(intent, wait=request.query_params.get("wait") == "true",
+                               then=lambda: ParcelDetailSerializer(app.parcel, context=ctx(request)).data)</code></pre>
+<p>Citizen side uses <code>chain.prepare(from_address=profile.wallet_address, …)</code>, which simulates with <code>{"from": wallet}</code>, estimates gas ×1.2, and stores the unsigned tx in the intent.</p>
+
+<h2 id="migration">16. Frontend migration map</h2>
+<p>Screens keep calling <code>landchain.*</code> and reading <code>useChain()</code> / <code>useMe()</code>; only <code>store.ts</code> changes (rule 5 in PROJECT_CONTEXT). Replace polling of the chain with TanStack Query against the API (refetch every 3 s, or Supabase Realtime later).</p>
+<div class="tbl"><table>
+<thead><tr><th>Today (frontend)</th><th>Becomes</th></tr></thead>
+<tbody>
+<tr><td><code>loadChainState()</code> in <code>chain/snapshot.ts</code></td><td><code>GET /parcels</code>, <code>/stats</code>, <code>/activity</code>, <code>/me/notifications</code>, <code>/review/queue</code> as needed per screen</td></tr>
+<tr><td><code>signInAs(id)</code>, <code>switchAccount</code>, <code>signOut</code></td><td>Supabase <code>signInWithPassword</code> / <code>signOut</code>; demo list from <code>/dev/demo-accounts</code></td></tr>
+<tr><td><code>connectWallet()</code></td><td>MetaMask connect + <code>/auth/wallet/nonce</code> + <code>personal_sign</code> + <code>/auth/wallet/verify</code></td></tr>
+<tr><td><code>setMyName</code>, <code>localNames</code></td><td><code>PATCH /me</code></td></tr>
+<tr><td><code>landchain.submitIdentity(hash, c)</code></td><td><code>POST /identity/submit</code> → sign → <code>/submitted</code></td></tr>
+<tr><td><code>landchain.verifyIdentity(who, ok)</code></td><td><code>POST /identities/{who}/verify|reject?wait=true</code></td></tr>
+<tr><td><code>landchain.submitApplication(i)</code> + <code>putFile</code></td><td><code>POST /documents</code> ×N, then <code>POST /applications</code> → sign → <code>/submitted</code></td></tr>
+<tr><td><code>landchain.approveApplication</code>, <code>rejectApplication</code></td><td><code>POST /applications/{id}/approve|reject?wait=true</code></td></tr>
+<tr><td><code>landchain.recordPayment(parcel, kind, amount, receiptNo)</code></td><td><code>POST /parcels/{id}/payments?wait=true</code></td></tr>
+<tr><td><code>landchain.requestTransfer(parcel, to)</code></td><td><code>GET /identities/lookup</code> then <code>POST /transfers</code> → sign</td></tr>
+<tr><td><code>landchain.cancelTransfer</code></td><td><code>POST /transfers/{id}/cancel</code> → sign</td></tr>
+<tr><td><code>landchain.approveTransfer</code>, <code>rejectTransfer</code></td><td><code>POST /transfers/{id}/approve|reject?wait=true</code></td></tr>
+<tr><td><code>vault.openFile(hash)</code></td><td><code>GET /documents/{sha256}/url?parcel_id=</code>, open the URL with an <code>&lt;a target="_blank"&gt;</code></td></tr>
+<tr><td>Fingerprint check (local <code>sha256Hex</code>)</td><td>Keep hashing in the browser; <code>POST /parcels/{id}/documents/check</code></td></tr>
+<tr><td><code>sendEnquiry</code>, <code>markEnquiry</code>, <code>useEnquiries</code></td><td><code>POST /parcels/{id}/enquiries</code>, <code>PATCH /enquiries/{id}</code>, <code>GET /me/enquiries</code></td></tr>
+<tr><td><code>validateBoundary</code>, <code>areaAcres</code></td><td>Keep for instant feedback; confirm with <code>POST /parcels/boundary-check</code> before submit</td></tr>
+<tr><td><code>gasCost(hash)</code></td><td><code>GET /parcels/{id}/receipt</code></td></tr>
+<tr><td><code>recordRevert</code> / <code>localReverts</code></td><td>Server <code>RevertLog</code>, visible in <code>/activity</code></td></tr>
+<tr><td><code>canSeePrivate</code>, <code>shownName</code></td><td>Server decides; UI uses <code>visibility</code>, <code>viewer.*</code>, <code>PersonRef.label</code></td></tr>
+<tr><td><code>estimateFee</code>, <code>FEE_INFO</code></td><td><code>GET /fees/schedule</code>, <code>/fees/estimate</code> (or keep the static copy)</td></tr>
+</tbody></table></div>
+<p>Write flow helper for the UI (keeps the existing toasts):</p>
+<pre><code>async function runIntent(res: { intent: TxIntent }) {
+  let it = res.intent;
+  const t = toast.loading(`Sending to ${config.chain_name}…`);
+  if (it.status === "awaiting_signature") {
+    if (config.features.dev_unlocked_signing &amp;&amp; isDemoAccount) it = await api.post(`/chain/intents/${it.id}/dev-sign`);
+    else try {
+      const hash = await window.ethereum.request({ method: "eth_sendTransaction", params: [it.tx] });
+      it = await api.post(`/chain/intents/${it.id}/submitted`, { tx_hash: hash });
+    } catch (e) { await api.post(`/chain/intents/${it.id}/rejected-by-wallet`, e); throw e; }
+  }
+  while (!["confirmed", "reverted", "failed", "expired"].includes(it.status)) { await sleep(1000); it = await api.get(`/chain/intents/${it.id}`); }
+  it.status === "confirmed"
+    ? toast.success(it.success_message, { id: t, description: `Confirmed in block ${it.block} · ${it.tx_hash.slice(0, 10)}…` })
+    : toast.error("Transaction reverted", { id: t, description: it.revert_reason ?? it.error });
+  queryClient.invalidateQueries();
+}</code></pre>
+
+<h2 id="tests">17. Seed data and tests</h2>
+<p>Seed (from <code>landchain-contracts/scripts/seed.js</code>): 14 parcels around Berekuso (GA-BRK-0001…0014), each with plan number, GPS address, three document fingerprints (Site plan, Indenture, Search report) and fees (search, stamp duty on an illustrative GH¢ 60,000/acre, registration, transfer where relevant). 10 registered; GA-BRK-0001 and GA-BRK-0008 transferred once (GA-BRK-0001: Yaw Boakye → Kofi Mensah); GA-BRK-0006 has a transfer waiting; GA-BRK-0013 and GA-BRK-0014 waiting for registration. Seeded parcels have fingerprints but no files, so <code>file_available=false</code>.</p>
+<p>Backend acceptance tests (pytest, against Ganache seeded with <code>npm run setup:local</code>), mirroring <code>src/test/chain.e2e.test.ts</code>:</p>
+<ol>
+  <li>Indexer reproduces the register: GA-BRK-0002 plan number starts with <code>SER B</code>, docs are [Site plan, Indenture, Search report], payments [Official search, Stamp duty, First registration]; statuses 0002 registered, 0006 transfer_pending, 0013 pending; 0001 owner is Kofi, owners [Yaw, Kofi]; a Transfer history row exists.</li>
+  <li>Kofi tries <code>POST /transfers</code> for GA-BRK-0002 (Ama's) → 422 "Only the owner can transfer this title", and <code>/activity?status=Reverted</code> shows it.</li>
+  <li>Abena (identity officer) calls <code>POST /applications/APP-14/approve</code> → 403 "Only the registrar can approve a registration".</li>
+  <li>Full life: Efua links wallet → submits identity (card GHA-700000006-6) → Abena verifies → Efua uploads 3 docs and applies → registrar approve blocked until stamp duty + registration recorded → approve mints GLT → Efua requests transfer to Ama → transfer fee → approve → owners [Efua, Ama].</li>
+  <li>Privacy: anonymous <code>GET /parcels/GA-BRK-0002</code> has no names, <code>fees=null</code>; <code>/receipt</code> 403; Ama sees her name and fees; registrar sees all.</li>
+  <li>Receipt reuse: recording the same receipt number twice → 422 "This receipt has already been recorded".</li>
+  <li>Document access: another citizen gets 403 on <code>/documents/{sha}/url</code>; owner and officers get a URL; <code>/documents/check</code> works anonymously.</li>
+  <li>Enquiry: anonymous enquiry on GA-BRK-0003 creates an owner notification; the response contains no owner data; the owner can mark it answered; a 6th enquiry within an hour from one IP → 429.</li>
+  <li>JWT: expired token → 401 TOKEN_EXPIRED; HS256 and JWKS both verified; <code>anon</code> role token rejected.</li>
+  <li>Indexer resilience: restart Ganache with <code>chain:fresh</code> + setup → indexer detects the new chain and rebuilds.</li>
+</ol>
+
+<h2 id="decisions">18. Open decisions for the team</h2>
+<ol>
+  <li><b>Citizen signing.</b> Recommended: prepare + MetaMask (keeps "wallet = identity" and <code>msg.sender</code> checks). Alternative: custodial wallets held by the backend per citizen (easier onboarding, but the Lands Commission could act for citizens, which weakens the two-key story). A third option, meta-transactions (ERC-2771), needs contract changes.</li>
+  <li><b>Ghana Card handling.</b> Today only the hash leaves the browser and the officer verifies on trust. Should the backend also keep evidence for the identity officer (an encrypted card photo in <code>identity-evidence</code>, or last 4 digits)? It helps real verification but stores personal data.</li>
+  <li><b>Per-officer wallets vs shared role wallets.</b> Shared wallets (this spec) are simpler; per-officer wallets make on-chain <code>decidedBy</code> name the individual but need key management per officer.</li>
+  <li><b>Can an officer also own land?</b> The contracts refuse <code>submitProfile</code> from officer addresses. Because officers act through role wallets, an officer's personal wallet could be a citizen. Decide whether to allow it.</li>
+  <li><b>Who may read enquiries.</b> Owner only (this spec), or Lands Commission too for abuse handling.</li>
+  <li><b>Sync vs async officer actions.</b> Spec supports both (<code>?wait=true</code>). Pick the UI default: wait on Ganache, async on Sepolia.</li>
+  <li><b>Not-found vs exists for public ID lookup</b> (9.3).</li>
+  <li><b>Hosting.</b> Django + Celery on Render/Fly/Railway; Redis on Upstash; Supabase for the rest.</li>
+</ol>
+<p class="meta">End of spec. Sources: <code>landchain-web/src/lib/landchain/{store,types,engine,privacy,fees,vault,enquiries,queue,geo}.ts</code>, <code>chain/{client,snapshot,config,gas}.ts</code>, all routes and <code>components/lc/*</code>; <code>landchain-contracts/contracts/*.sol</code>, <code>migrations/1_deploy_land_system.js</code>, READMEs and PROJECT_CONTEXT.md.</p>
+</main>
+</div>
+<script>
+(function () {
+  var btn = document.getElementById("copy-all");
+  var status = document.getElementById("copy-status");
+  btn.addEventListener("click", function () {
+    var text = document.getElementById("spec").innerText;
+    if (!navigator.clipboard) { status.textContent = "Copy isn't available here. Select the page text instead."; return; }
+    navigator.clipboard.writeText(text).then(function () {
+      status.textContent = "Copied " + Math.round(text.length / 1000) + "k characters.";
+    }, function () {
+      status.textContent = "Copy was blocked. Select the page text instead.";
+    });
+  });
+})();
+</script>
+</body>
+</html>
