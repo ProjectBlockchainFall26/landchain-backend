@@ -5,4 +5,5 @@ from . import views
 
 urlpatterns = [
     re_path(r"^dev/demo-accounts/?$", views.DevDemoAccountsView.as_view()),  # /dev/demo-accounts
+    re_path(r"^dev/vault/(?P<token>[^/]+)/?$", views.DevVaultFileView.as_view()),  # local vault links (dev only)
 ]
