@@ -1,23 +1,46 @@
-"""Models for `notifications`. Owner: Person A.
+"""Models for `notifications` (task A7). Rows are created by the indexer (C8) and by enquiries (A8)."""
+from django.db import models
 
-Nothing is built yet. Each block below is the design from docs/api-spec.md section 7
-(7.1 = off-chain tables owned by Django, 7.2 = projection tables written only by the indexer).
-Field names were frozen in task J1: do not rename them without telling the team.
-Only the owner of this app creates its migrations.
-"""
-from django.db import models  # noqa: F401
+from landchain.core.ids import new_ntf
 
-# ---- Notification  (task A7, Person A) ------------------------------------------------
-# Notification
-#   id                 "ntf_" ULID pk
-#   recipient_public_id varchar(11) null       # for a citizen
-#   recipient_role     varchar(20) null        # "registrar" | "id_officer" (UI's "role:Registrar")
-#   recipient_profile  fk Profile null
-#   kind               varchar(40)             # see section 12
-#   text               varchar(300)
-#   parcel_id          varchar(11) null
-#   link               varchar(120) null       # "/title/GA-BRK-0006", "/review"
-#   source_event       fk ChainEvent null
-#   at                 timestamptz
-#   NotificationRead(notification, profile, read_at)  # role notifications are read per officer
+ROLE_AUDIENCE = {"registrar": "role:Registrar", "id_officer": "role:Identity officer"}
 
+
+class Notification(models.Model):
+    id = models.CharField(max_length=40, primary_key=True, default=new_ntf, editable=False)
+    recipient_public_id = models.CharField(max_length=11, null=True, blank=True, db_index=True)
+    recipient_role = models.CharField(max_length=20, null=True, blank=True, db_index=True)
+    recipient_profile = models.ForeignKey("accounts.Profile", null=True, blank=True, on_delete=models.CASCADE,
+                                          related_name="notifications")
+    kind = models.CharField(max_length=40)
+    text = models.CharField(max_length=300)
+    parcel_id = models.CharField(max_length=11, null=True, blank=True)
+    link = models.CharField(max_length=120, null=True, blank=True)
+    source_event = models.ForeignKey("indexer.ChainEvent", null=True, blank=True, on_delete=models.SET_NULL)
+    dedupe_key = models.CharField(max_length=120, null=True, blank=True, unique=True)  # replays never duplicate
+    relay = models.BooleanField(default=False)
+    relay_extra = models.TextField(null=True, blank=True)       # e.g. enquiry message + contact for the owner
+    relayed_at = models.DateTimeField(null=True, blank=True)
+    at = models.DateTimeField(db_index=True)
+
+    class Meta:
+        db_table = "notification"
+        ordering = ["-at", "-id"]
+
+    @property
+    def audience(self) -> str:
+        if self.recipient_role:
+            return ROLE_AUDIENCE.get(self.recipient_role, f"role:{self.recipient_role}")
+        return "me"
+
+
+class NotificationRead(models.Model):
+    """Role notifications are read per officer, so read state lives here."""
+
+    notification = models.ForeignKey(Notification, on_delete=models.CASCADE, related_name="reads")
+    profile = models.ForeignKey("accounts.Profile", on_delete=models.CASCADE, related_name="notification_reads")
+    read_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        db_table = "notification_read"
+        constraints = [models.UniqueConstraint(fields=["notification", "profile"], name="uniq_notification_read")]

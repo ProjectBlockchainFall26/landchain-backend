@@ -1,26 +1,34 @@
-"""Models for `enquiries`. Owner: Person A.
+"""Models for `enquiries` (task A8). Replaces the browser's localStorage enquiries."""
+from django.db import models
 
-Nothing is built yet. Each block below is the design from docs/api-spec.md section 7
-(7.1 = off-chain tables owned by Django, 7.2 = projection tables written only by the indexer).
-Field names were frozen in task J1: do not rename them without telling the team.
-Only the owner of this app creates its migrations.
-"""
-from django.db import models  # noqa: F401
+from landchain.core.ids import new_enq
 
-# ---- Enquiry  (task A8, Person A) -----------------------------------------------------
-# Enquiry                                      # replaces enquiries.ts (localStorage)
-#   id                 "enq_" ULID pk
-#   parcel_id          varchar(11)
-#   record_id          int
-#   to_public_id       char(11)                # owner at the time
-#   to_profile         fk Profile null         # resolved owner profile (never returned to the sender)
-#   from_profile       fk Profile null         # null for anonymous visitors
-#   from_public_id     varchar(11) default "public"
-#   name               varchar(120)
-#   contact            varchar(160)            # phone or email of the enquirer
-#   message            text (max 2000)
-#   status             enum(new, read, answered)
-#   relayed_at         timestamptz null        # email/SMS sent to owner
-#   ip_hash            char(64)                # sha256(ip + salt) for rate limiting / abuse
-#   created_at, read_at, answered_at
 
+class Enquiry(models.Model):
+    class Status(models.TextChoices):
+        NEW = "new"
+        READ = "read"
+        ANSWERED = "answered"
+
+    id = models.CharField(max_length=40, primary_key=True, default=new_enq, editable=False)
+    parcel_id = models.CharField(max_length=11, db_index=True)
+    record_id = models.IntegerField()
+    to_public_id = models.CharField(max_length=11, db_index=True)      # owner at the time
+    to_profile = models.ForeignKey("accounts.Profile", null=True, blank=True, on_delete=models.SET_NULL,
+                                   related_name="enquiries_received")  # never returned to the sender
+    from_profile = models.ForeignKey("accounts.Profile", null=True, blank=True, on_delete=models.SET_NULL,
+                                     related_name="enquiries_sent")
+    from_public_id = models.CharField(max_length=11, default="public")
+    name = models.CharField(max_length=120)
+    contact = models.CharField(max_length=160)
+    message = models.TextField(max_length=2000)
+    status = models.CharField(max_length=10, choices=Status.choices, default=Status.NEW, db_index=True)
+    relayed_at = models.DateTimeField(null=True, blank=True)
+    ip_hash = models.CharField(max_length=64, blank=True, default="", db_index=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    read_at = models.DateTimeField(null=True, blank=True)
+    answered_at = models.DateTimeField(null=True, blank=True)
+
+    class Meta:
+        db_table = "enquiry"
+        ordering = ["-created_at"]

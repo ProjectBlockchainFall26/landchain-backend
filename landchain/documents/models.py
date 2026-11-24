@@ -1,24 +1,38 @@
-"""Models for `documents`. Owner: Person D.
+"""Models for `documents` (task D2). Replaces the browser's IndexedDB vault."""
+from django.db import models
 
-Nothing is built yet. Each block below is the design from docs/api-spec.md section 7
-(7.1 = off-chain tables owned by Django, 7.2 = projection tables written only by the indexer).
-Field names were frozen in task J1: do not rename them without telling the team.
-Only the owner of this app creates its migrations.
-"""
-from django.db import models  # noqa: F401
+from landchain.core.ids import new_doc
 
-# ---- Document  (task D2, Person D) ----------------------------------------------------
-# Document                                     # replaces vault.ts (IndexedDB)
-#   id                 "doc_" ULID pk
-#   sha256             char(66) index          # 0x + 64 hex, equals on-chain Doc.hash
-#   doc_type           varchar(40)             # Site plan | Indenture | Search report | Consent / concurrence
-#   original_name      varchar(255)            # private: may contain a person's name
-#   mime               varchar(80)
-#   size_bytes         int
-#   storage_path       varchar(300)            # parcel-documents/<sha256>
-#   uploaded_by        fk Profile
-#   status             enum(staged, attached, orphaned)
-#   parcel_record_id   int null                # set when the indexer sees the fingerprint on a record
-#   created_at, attached_at
-#   unique (sha256, uploaded_by)
+DOC_TYPES = [
+    {"type": "Site plan", "required": True, "note": "Prepared by a licensed surveyor, approved by Survey & Mapping"},
+    {"type": "Indenture", "required": True, "note": "Proof of ownership: indenture, family declaration or deed of gift"},
+    {"type": "Search report", "required": True, "note": "Official search from the Lands Commission"},
+    {"type": "Consent / concurrence", "required": False, "note": "Only for stool or family land"},
+]
+DOC_TYPE_NAMES = [d["type"] for d in DOC_TYPES]
+REQUIRED_DOC_TYPES = [d["type"] for d in DOC_TYPES if d["required"]]
+ALLOWED_MIME = {"application/pdf", "image/jpeg", "image/png"}
 
+
+class Document(models.Model):
+    class Status(models.TextChoices):
+        STAGED = "staged"
+        ATTACHED = "attached"
+        ORPHANED = "orphaned"
+
+    id = models.CharField(max_length=40, primary_key=True, default=new_doc, editable=False)
+    sha256 = models.CharField(max_length=66, db_index=True)
+    doc_type = models.CharField(max_length=40)
+    original_name = models.CharField(max_length=255)       # private: may contain a person's name
+    mime = models.CharField(max_length=80)
+    size_bytes = models.IntegerField()
+    storage_path = models.CharField(max_length=300)        # <sha256>, inside the parcel-documents bucket
+    uploaded_by = models.ForeignKey("accounts.Profile", on_delete=models.PROTECT, related_name="documents")
+    status = models.CharField(max_length=10, choices=Status.choices, default=Status.STAGED, db_index=True)
+    parcel_record_id = models.IntegerField(null=True, blank=True, db_index=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    attached_at = models.DateTimeField(null=True, blank=True)
+
+    class Meta:
+        db_table = "document"
+        constraints = [models.UniqueConstraint(fields=["sha256", "uploaded_by"], name="uniq_doc_per_uploader")]
