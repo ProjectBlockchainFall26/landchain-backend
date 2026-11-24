@@ -19,7 +19,7 @@ from django.db import IntegrityError, transaction
 from django.utils import timezone
 from rest_framework.response import Response
 
-from landchain.core.errors import Conflict, error_response
+from landchain.core.errors import ApiError, Conflict, error_response
 from landchain.core.models import IdempotencyRecord
 from landchain.core.permissions import viewer
 
@@ -70,6 +70,8 @@ def idempotent(view_method):
                                            code="IDEMPOTENCY_CONFLICT"), request)
         try:
             response = view_method(self, request, *args, **kwargs)
+        except ApiError as e:  # 4xx refusals (validation, CHAIN_REVERT) are replayed too
+            response = error_response(e, request)
         except Exception:
             rec.delete()
             raise

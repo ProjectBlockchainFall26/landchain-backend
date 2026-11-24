@@ -7,6 +7,7 @@ from rest_framework.views import APIView
 
 from landchain.chain.service import signer_address
 from landchain.core.errors import ApiError, Conflict, NotFound, Validation
+from landchain.core.idempotency import idempotent
 from landchain.core.permissions import IsAdmin
 
 from . import supabase_admin
@@ -33,6 +34,7 @@ class AdminOfficersView(APIView):
         rows = Profile.objects.exclude(roles=[]).order_by("full_name", "email")
         return Response({"results": [officer_row(p) for p in rows], "signers": _signers()})
 
+    @idempotent
     def post(self, request, *args, **kwargs):
         roles = request.data.get("roles") or []
         if not isinstance(roles, list) or not roles or any(r not in ALL_ROLES for r in roles):
