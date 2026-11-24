@@ -7,7 +7,7 @@ from django.core.management.base import BaseCommand, CommandError
 
 from landchain.chain import contracts
 
-FILES = ["deployments.local.json", "demo-accounts.local.json"]
+FILES = ["deployments.local.json", "deployments.json", "demo-accounts.local.json"]
 
 
 class Command(BaseCommand):
@@ -39,8 +39,10 @@ class Command(BaseCommand):
                 shutil.copyfile(f, dst / name)
                 copied.append(name)
         contracts.clear_cache()
-        deps = json.loads((dst / "deployments.local.json").read_text()) if (dst / "deployments.local.json").exists() \
-            else {}
+        deps = {}
+        for name in ("deployments.local.json", "deployments.json"):
+            if (dst / name).exists():
+                deps.update(json.loads((dst / name).read_text()))
         self.stdout.write(self.style.SUCCESS(
             f"Synced {n} ABIs and {', '.join(copied) or 'no deployment files'} into {dst}. "
             f"Chains: {', '.join(deps) or 'none'}."))

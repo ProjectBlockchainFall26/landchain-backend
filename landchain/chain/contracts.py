@@ -65,16 +65,17 @@ def abi(name: str) -> list[dict]:
     return [json.loads(x) for x in _abi_cached(str(contracts_dir()), name)]
 
 
-def _deployments_file() -> Path:
-    return contracts_dir() / "deployments.local.json"
+DEPLOYMENT_FILES = ("deployments.local.json", "deployments.json")   # local chains / testnets (landchain-contracts)
 
 
 def deployment(chain_id: int | None = None) -> Deployment:
     chain_id = chain_id or settings.CHAIN_ID
     entry: dict = {}
-    path = _deployments_file()
-    if path.exists():
-        entry = _read_json(path).get(str(chain_id)) or {}
+    for name in DEPLOYMENT_FILES:
+        path = contracts_dir() / name
+        if path.exists() and (_read_json(path).get(str(chain_id)) or {}):
+            entry = _read_json(path)[str(chain_id)]
+            break
     addrs = {n: (os.environ.get(ENV_ADDRESS[n]) or (entry.get("contracts") or {}).get(n) or "").lower()
              for n in NAMES}
     if not all(addrs.values()):
