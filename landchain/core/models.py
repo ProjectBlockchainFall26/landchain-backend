@@ -1,10 +1,19 @@
-"""Models for `core`. Owner: B1 / C1 / D1 (shared).
+"""Models for `core`. IdempotencyRecord belongs to task D1 (spec section 4)."""
+from django.db import models
 
-Nothing is built yet. Each block below is the design from docs/api-spec.md section 7
-(7.1 = off-chain tables owned by Django, 7.2 = projection tables written only by the indexer).
-Field names were frozen in task J1: do not rename them without telling the team.
-Only the owner of this app creates its migrations.
-"""
-from django.db import models  # noqa: F401
 
-# This app has no models.
+class IdempotencyRecord(models.Model):
+    """First response to a POST with an Idempotency-Key, replayed for 24 h to the same user."""
+
+    profile = models.ForeignKey("accounts.Profile", on_delete=models.CASCADE, related_name="idempotency_records")
+    key = models.CharField(max_length=80)
+    method = models.CharField(max_length=10)
+    path = models.CharField(max_length=300)
+    body_hash = models.CharField(max_length=64)
+    status_code = models.SmallIntegerField(null=True)
+    response = models.JSONField(null=True)
+    created_at = models.DateTimeField(auto_now_add=True, db_index=True)
+
+    class Meta:
+        db_table = "idempotency_record"
+        constraints = [models.UniqueConstraint(fields=["profile", "key"], name="uniq_idempotency_key")]

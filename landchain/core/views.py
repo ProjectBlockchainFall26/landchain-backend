@@ -1,18 +1,30 @@
-"""Stub views. Each returns 501 until its task is built. Owners are in the docstrings."""
+"""GET /health (task B1, spec 9.1). Checks the database and Redis, not the chain."""
+from django.conf import settings
+from django.core.cache import cache
+from django.db import connection
+from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from landchain.core.stubs import not_implemented
+from landchain.core.permissions import Public
 
 
 class HealthView(APIView):
-    """
-    GET /api/v1/health  [Public]
-        Task B1 (Person B): Error format, ID helpers, health check, Celery + Redis
-        Spec: docs/api-spec.md section 9.1 · Postman: 'GET /health'
-        Liveness for the load balancer. Checks database and Redis, not the chain.
-    """
+    permission_classes = [Public]
+    authentication_classes = []
 
     def get(self, request, *args, **kwargs):
-        # TODO(B1): implement. Request/response bodies are in the spec and the Postman example.
-        return not_implemented("B1", request)
-
+        db = redis = "ok"
+        try:
+            with connection.cursor() as c:
+                c.execute("SELECT 1")
+        except Exception:
+            db = "error"
+        try:
+            cache.set("health:ping", 1, 5)
+            if cache.get("health:ping") != 1:
+                redis = "error"
+        except Exception:
+            redis = "error"
+        ok = db == "ok" and redis == "ok"
+        return Response({"ok": ok, "version": settings.API_VERSION, "db": db, "redis": redis},
+                        status=200 if ok else 503)

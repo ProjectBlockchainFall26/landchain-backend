@@ -10,3 +10,4 @@ staticfiles/
 caddy_data/
 node_modules/
 .DS_Store
+var/
