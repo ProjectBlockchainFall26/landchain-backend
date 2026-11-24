@@ -8,7 +8,7 @@ Read with `docs/api-spec.md` (the contract) and `AGENTS.md` (the rules). The tea
 |---|---|---|
 | `config/` | settings (env-driven), root urls, wsgi/asgi, `celery.py` | B1 (Celery), each task fills its TODO(ID) in settings |
 | `landchain/api_urls.py` | mounts every app's `urls.py` under `/api/v1/` | shared |
-| `landchain/core/` | errors, ids, health (B1) · pagination, permissions, privacy (C1) · idempotency, ratelimit (D1) · chain headers middleware (B6) · `stubs.py` (delete when unused) | B / C / D |
+| `landchain/core/` | errors, ids, health (B1) · pagination, permissions, privacy (C1) · idempotency, ratelimit (D1) · request id + chain headers middleware (B6) | B / C / D |
 | `landchain/accounts/` | Profile, WalletNonce, Supabase JWT auth, `/me`, wallet linking, officer admin | Person A |
 | `landchain/notifications/` | Notification models, inbox endpoints, `notify()` helper, email/SMS relay | Person A |
 | `landchain/enquiries/` | Enquiry model, send/inbox/mark endpoints | Person A |
@@ -24,8 +24,8 @@ Read with `docs/api-spec.md` (the contract) and `AGENTS.md` (the rules). The tea
 | `docs/` | `api-spec.md` (contract), `api-spec.html`, `team/` PDFs | shared |
 | `tests/` | cross-app tests (route smoke test; acceptance suite in J3) | shared |
 
-Every endpoint already has a stub view that returns 501. Its docstring names the task, owner and spec section.
-Every `models.py` lists the tables to build (spec section 7) as comments.
+Every endpoint is built; each view's docstring names its route, permission and spec section.
+Local-only extra route: `GET /dev/vault/<token>` serves vault files when Supabase Storage isn't configured.
 
 ## Tasks and dependency order
 
