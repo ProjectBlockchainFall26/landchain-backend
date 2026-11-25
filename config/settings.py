@@ -125,7 +125,7 @@ REST_FRAMEWORK = {
     "DEFAULT_PERMISSION_CLASSES": ["rest_framework.permissions.AllowAny"],  # each view sets its own (C1)
     "UNAUTHENTICATED_USER": None,
     # TODO(B1): "EXCEPTION_HANDLER": "landchain.core.errors.exception_handler",
-    # TODO(C1): "DEFAULT_PAGINATION_CLASS": "landchain.core.pagination.Pagination",
+    "DEFAULT_PAGINATION_CLASS": "landchain.core.pagination.Pagination",
     # TODO(D1): "DEFAULT_SCHEMA_CLASS": "drf_spectacular.openapi.AutoSchema",
 }
 
