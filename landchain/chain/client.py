@@ -52,7 +52,8 @@ def contract(name: str) -> Contract:
 
 
 def all_contracts() -> dict[str, Contract]:
-    return {n: contract(n) for n in registry.NAMES}
+    dep = deployment()
+    return {n: contract(n) for n in registry.NAMES if dep.has(n)}
 
 
 def head_block() -> int:

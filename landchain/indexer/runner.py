@@ -22,6 +22,7 @@ from landchain.chain.encoding import public_id
 from landchain.chain.service import confirm_indexed, jsonable
 from landchain.fees.models import Payment
 from landchain.registry.models import (
+    Encumbrance,
     Application,
     ChainIdentity,
     ChainRole,
@@ -41,7 +42,7 @@ LOCK_KEY = 74_1337_0001
 class _Decoder:
     def __init__(self, dep):
         self.dep = dep
-        self.contracts = {n: client.contract(n) for n in reg.NAMES}
+        self.contracts = {n: client.contract(n) for n in reg.NAMES if dep.has(n)}
         self.by_topic: dict[tuple[str, str], tuple[str, str]] = {}
         for name in self.contracts:
             for item in reg.abi(name):
@@ -90,6 +91,7 @@ def wipe(chain_id: int):
     from landchain.notifications.models import Notification
     Notification.objects.filter(source_event__isnull=False).delete()
     HistoryEvent.objects.all().delete()
+    Encumbrance.objects.all().delete()
     Payment.objects.all().delete()
     TransferRequest.objects.all().delete()
     Application.objects.all().delete()
@@ -174,6 +176,9 @@ def rebuild_all(block: int):
         handlers.refresh_payment(pay)
     for addr in client.contract("IdentityRegistry").functions.members().call():
         handlers.refresh_identity(addr)
+    if client.deployment().has("EncumbranceRegistry"):
+        for enc in range(1, client.contract("EncumbranceRegistry").functions.encumbranceCount().call() + 1):
+            handlers.refresh_encumbrance(enc)
     handlers.refresh_roles()
 
 

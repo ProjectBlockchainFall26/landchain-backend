@@ -2,7 +2,7 @@
 
 Reads CONTRACTS_DIR (written by `manage.py sync_contracts`, or point it straight at
 landchain-contracts/shared): abi/<Name>.json and deployments.local.json keyed by chain id.
-The four *_ADDRESS variables and START_BLOCK override the file (useful on Sepolia).
+The *_ADDRESS variables and START_BLOCK override the file (useful on Sepolia).
 """
 from __future__ import annotations
 
@@ -14,9 +14,12 @@ from pathlib import Path
 
 from django.conf import settings
 
-NAMES = ("LandAccessControl", "IdentityRegistry", "TitleRegistry", "FeeLedger")
+NAMES = ("LandAccessControl", "IdentityRegistry", "TitleRegistry", "FeeLedger", "EncumbranceRegistry")
+# Added after the first deployments: a chain without it still works, with encumbrances switched off.
+OPTIONAL = ("EncumbranceRegistry",)
 ENV_ADDRESS = {"LandAccessControl": "LAND_ACCESS_CONTROL_ADDRESS", "IdentityRegistry": "IDENTITY_REGISTRY_ADDRESS",
-               "TitleRegistry": "TITLE_REGISTRY_ADDRESS", "FeeLedger": "FEE_LEDGER_ADDRESS"}
+               "TitleRegistry": "TITLE_REGISTRY_ADDRESS", "FeeLedger": "FEE_LEDGER_ADDRESS",
+               "EncumbranceRegistry": "ENCUMBRANCE_REGISTRY_ADDRESS"}
 
 
 class ContractsMissing(Exception):
@@ -33,6 +36,9 @@ class Deployment:
 
     def address(self, name: str) -> str:
         return self.addresses[name]
+
+    def has(self, name: str) -> bool:
+        return bool(self.addresses.get(name))
 
     def name_of(self, address: str) -> str | None:
         address = (address or "").lower()
@@ -78,6 +84,7 @@ def deployment(chain_id: int | None = None) -> Deployment:
             break
     addrs = {n: (os.environ.get(ENV_ADDRESS[n]) or (entry.get("contracts") or {}).get(n) or "").lower()
              for n in NAMES}
+    addrs = {n: a for n, a in addrs.items() if a or n not in OPTIONAL}
     if not all(addrs.values()):
         raise ContractsMissing(
             f"No LandChain deployment for chain {chain_id}. Run npm run setup:all in landchain-contracts, "

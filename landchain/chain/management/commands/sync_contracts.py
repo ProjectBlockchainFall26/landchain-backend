@@ -28,6 +28,8 @@ class Command(BaseCommand):
         n = 0
         for name in contracts.NAMES:
             f = src / "abi" / f"{name}.json"
+            if not f.exists() and name in contracts.OPTIONAL:
+                continue
             if not f.exists():
                 raise CommandError(f"Missing {f}. Run npm run contracts:compile in landchain-contracts.")
             shutil.copyfile(f, dst / "abi" / f.name)
