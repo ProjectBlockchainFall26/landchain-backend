@@ -207,4 +207,10 @@ USE_TZ = True
 STATIC_URL = "static/"
 STATIC_ROOT = BASE_DIR / "staticfiles"
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
+# macOS/Homebrew: point Django at GDAL/GEOS when they aren't on the default search path or the
+# installed GDAL is newer than the versions Django tries by name.
+if os.environ.get("GDAL_LIBRARY_PATH"):
+    GDAL_LIBRARY_PATH = os.environ["GDAL_LIBRARY_PATH"]
+if os.environ.get("GEOS_LIBRARY_PATH"):
+    GEOS_LIBRARY_PATH = os.environ["GEOS_LIBRARY_PATH"]
 SILENCED_SYSTEM_CHECKS = ["gis.W001"]  # GDAL < 3.9 on Ubuntu 24.04 / CI; we never open untrusted spatial files
