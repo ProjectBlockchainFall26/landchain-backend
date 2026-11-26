@@ -104,8 +104,19 @@ def wipe(chain_id: int):
                                                                     parcel_record_id=None, attached_at=None)
 
 
-def _reset_cursor(cursor: IndexerCursor, dep, from_block: int | None = None):
+def _forget_old_chain(chain_id: int):
+    """Intents still open against a chain that is gone (Ganache restarted, contracts redeployed) can never
+    confirm. A fresh Ganache reuses tx hashes and payment ids; service.claim_tx_hash and refresh_payment
+    move those over to the new rows."""
+    from landchain.chain.models import TxIntent
+    TxIntent.objects.filter(chain_id=chain_id).exclude(status__in=TxIntent.FINAL).update(
+        status="expired", error="The chain was reset before this transaction was confirmed")
+
+
+def _reset_cursor(cursor: IndexerCursor, dep, from_block: int | None = None, *, fresh: bool = False):
     wipe(cursor.chain_id)
+    if fresh:
+        _forget_old_chain(cursor.chain_id)
     start = dep.start_block if from_block is None else from_block
     cursor.title_registry_address = dep.address("TitleRegistry")
     cursor.last_block = start - 1
@@ -180,7 +191,7 @@ def run_once(max_batches: int = 50) -> dict:
         fork = _check_fork(cursor, dep, w3, head)
         if fork == "fresh":
             log.warning("New chain or redeployed contracts: re-indexing from block %s", dep.start_block)
-            _reset_cursor(cursor, dep)
+            _reset_cursor(cursor, dep, fresh=True)
         elif fork == "reorg":
             log.warning("Reorg detected at block %s", cursor.last_block)
             _rollback_reorg(cursor, w3)

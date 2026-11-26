@@ -156,7 +156,13 @@ def refresh_payment(payment_id: int, *, block: int | None = None, tx_hash: str |
     if block is not None:
         defaults.update(block_number=block, tx_hash=tx_hash or "")
     p, _ = Payment.objects.update_or_create(payment_id=payment_id, defaults=defaults)
-    PaymentReceipt.objects.filter(receipt_hash=p.receipt_hash, payment_id__isnull=True).update(payment_id=payment_id)
+    # A fresh chain restarts payment ids: a receipt from the old chain lets go of this id.
+    PaymentReceipt.objects.filter(payment_id=payment_id).exclude(receipt_hash=p.receipt_hash).update(payment_id=None)
+    if not PaymentReceipt.objects.filter(payment_id=payment_id).exists():
+        rc = PaymentReceipt.objects.filter(receipt_hash=p.receipt_hash, payment_id__isnull=True).order_by("-created_at").first()
+        if rc:
+            rc.payment_id = payment_id
+            rc.save(update_fields=["payment_id"])
     return p
 
 

@@ -48,6 +48,13 @@ KEY_SETTING = {"registrar": "REGISTRAR_SIGNER_KEY", "id_officer": "ID_OFFICER_SI
 
 
 # ---------------------------------------------------------------- helpers
+
+def claim_tx_hash(intent, tx_hash: str):
+    """Set the intent's tx hash. A fresh Ganache reuses hashes, so an intent from the old chain gives it up."""
+    h = tx_hash.lower()
+    TxIntent.objects.filter(tx_hash=h).exclude(pk=intent.pk).update(tx_hash=None)
+    intent.tx_hash = h
+
 def jsonable(v):
     if isinstance(v, bytes | bytearray):
         return "0x" + bytes(v).hex()
@@ -249,7 +256,7 @@ def send_intent(intent_id: str):
                     intent.status, intent.error = TxIntent.Status.FAILED, msg
                     intent.save(update_fields=["status", "error", "updated_at"])
                     return intent
-        intent.tx_hash = Web3.to_hex(tx_hash).lower()
+        claim_tx_hash(intent, Web3.to_hex(tx_hash))
         intent.status = TxIntent.Status.SUBMITTED
         intent.submitted_at = timezone.now()
         intent.save(update_fields=["tx_hash", "status", "submitted_at", "updated_at"])
@@ -371,7 +378,7 @@ def verify_submitted(intent: TxIntent, tx_hash: str, lookup_timeout: float | Non
             or tx["from"].lower() != intent.from_address:
         raise ApiError("This transaction is not the one prepared for this action.", code="TX_MISMATCH",
                        status_code=422)
-    intent.tx_hash = tx_hash.lower()
+    claim_tx_hash(intent, tx_hash)
     intent.status = TxIntent.Status.SUBMITTED
     intent.submitted_at = timezone.now()
     try:
@@ -404,7 +411,7 @@ def dev_sign(intent: TxIntent) -> TxIntent:
                    from_address=intent.from_address, error=reason, intent=intent)
         raise ChainRevert(reason) from e
     intent.signer_mode = TxIntent.Signer.DEV_UNLOCKED
-    intent.tx_hash = Web3.to_hex(h).lower()
+    claim_tx_hash(intent, Web3.to_hex(h))
     intent.status = TxIntent.Status.SUBMITTED
     intent.submitted_at = timezone.now()
     intent.save(update_fields=["signer_mode", "tx_hash", "status", "submitted_at", "updated_at"])
