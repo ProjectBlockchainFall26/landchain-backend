@@ -8,8 +8,9 @@ from landchain.accounts.models import Profile
 from landchain.chain.contracts import demo_labels
 from landchain.chain.encoding import public_id
 
-# Seeded Ganache accounts (landchain-contracts scripts/seed.js), in account order.
-ROLES_BY_INDEX = {0: ["registrar", "admin"], 1: ["id_officer"]}
+# Seeded Ganache accounts (landchain-contracts scripts/seed.js). The Lands Commission wallet holds every officer role
+# on the local chain: it checks Ghana Cards and approves land. Everyone else is a citizen.
+ROLES_BY_NAME = {"Lands Commission": ["registrar", "id_officer", "admin"]}
 
 
 def demo_email(name: str) -> str:
@@ -18,7 +19,7 @@ def demo_email(name: str) -> str:
 
 
 class Command(BaseCommand):
-    help = ("Create the 8 demo people as Supabase users linked to their Ganache addresses (task A6). "
+    help = ("Create the demo people as Supabase users linked to their Ganache addresses (task A6). "
             "Without Supabase keys, creates the profiles only (sign in locally with X-Dev-User).")
 
     def handle(self, *args, **options):
@@ -30,9 +31,9 @@ class Command(BaseCommand):
                                "landchain-contracts, then python manage.py sync_contracts.")
         if supabase_admin.configured() and not settings.DEMO_PASSWORD:
             raise CommandError("Set DEMO_PASSWORD.")
-        for i, person in enumerate(labels):
+        for person in labels:
             email, name, address = demo_email(person["name"]), person["name"], person["address"].lower()
-            roles = ROLES_BY_INDEX.get(i, [])
+            roles = ROLES_BY_NAME.get(name, [])
             user = supabase_admin.ensure_user(email, settings.DEMO_PASSWORD, name)
             uid = user.id if user is not None else dev_user_id(email)
             Profile.objects.filter(wallet_address=address).exclude(supabase_user_id=uid).update(
@@ -42,6 +43,9 @@ class Command(BaseCommand):
                 "wallet_linked_at": timezone.now(), "roles": roles, "is_demo": True})
             supabase_admin.sync_roles(p.supabase_user_id, roles)
             self.stdout.write(f"{name:<17} {email:<34} {address} {p.public_id} {','.join(roles) or 'citizen'}")
+        # A demo person from an older seed (for example a separate identity officer) is no longer listed.
+        stale = Profile.objects.filter(is_demo=True).exclude(email__in=[demo_email(x["name"]) for x in labels])
+        stale.update(is_demo=False, roles=[])
         self.stdout.write(self.style.SUCCESS(
             f"Seeded {len(labels)} demo users" + (" in Supabase." if supabase_admin.configured() else
                                                    " (profiles only: use X-Dev-User: <email>).")))
