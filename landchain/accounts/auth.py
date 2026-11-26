@@ -7,8 +7,10 @@ loads or creates the Profile. DevHeaderAuthentication lets a developer act as an
 from __future__ import annotations
 
 import logging
+import ssl
 import uuid
 
+import certifi
 import jwt
 from django.conf import settings
 from jwt import PyJWKClient
@@ -24,8 +26,11 @@ _jwks_client: PyJWKClient | None = None
 def _jwks() -> PyJWKClient:
     global _jwks_client
     if _jwks_client is None:
+        # certifi's CA bundle: the python.org macOS installer ships without system certificates,
+        # so fetching Supabase's signing keys failed with CERTIFICATE_VERIFY_FAILED.
         _jwks_client = PyJWKClient(f"{settings.SUPABASE_URL}/auth/v1/.well-known/jwks.json",
-                                   cache_keys=True, lifespan=600)
+                                   cache_keys=True, lifespan=600,
+                                   ssl_context=ssl.create_default_context(cafile=certifi.where()))
     return _jwks_client
 
 
