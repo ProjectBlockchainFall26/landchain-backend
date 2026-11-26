@@ -161,7 +161,7 @@ SITE_DOMAIN = os.environ.get("SITE_DOMAIN", "localhost:5173")
 SITE_URI = os.environ.get("SITE_URI", "http://localhost:5173")
 
 # ---- CORS: bearer tokens, no cookies (spec section 4)
-CORS_ALLOWED_ORIGINS = env_list("CORS_ALLOWED_ORIGINS", "http://localhost:5173")
+CORS_ALLOWED_ORIGINS = env_list("CORS_ALLOWED_ORIGINS", "http://localhost:5173,http://localhost:8080")
 CORS_ALLOW_CREDENTIALS = False
 CORS_ALLOW_HEADERS = ["authorization", "content-type", "idempotency-key", "x-dev-user"]
 
