@@ -69,7 +69,7 @@ def test_2_and_3_tamper_attempts(demo, api):
     assert r.status_code == 422 and r.json()["error"]["message"] == "Only the owner can transfer this title"
     rev = api.get("/api/v1/activity?status=Reverted").json()["results"]
     assert any(x["error"] == "Only the owner can transfer this title" and "GA-BRK-0002" in x["args_label"] for x in rev)
-    r = demo["abena"].post("/api/v1/applications/APP-14/approve")
+    r = demo["kofi"].post("/api/v1/applications/APP-14/approve")
     assert r.status_code == 403 and r.json()["error"]["message"] == "Only the registrar can approve a registration"
 
 
@@ -116,9 +116,9 @@ def test_4_full_life_with_a_new_wallet(demo, api, tmp_path, settings):
     assert r.status_code == 422 and r.json()["error"]["code"] == "TX_MISMATCH"
     assert sign_and_submit(me, intent, acct.key.hex())["status"] == "confirmed"
     assert me.get("/api/v1/me").json()["identity"]["status"] == "pending"
-    q = demo["abena"].get("/api/v1/review/queue").json()
+    q = demo["registrar"].get("/api/v1/review/queue").json()
     assert any(i["public_id"] == pid and i["name"] == "New Owner" for i in q["identities"]["items"])
-    r = demo["abena"].post(f"/api/v1/identities/{pid}/verify?wait=true", {"note": "NIA record checked"})
+    r = demo["registrar"].post(f"/api/v1/identities/{pid}/verify?wait=true", {"note": "NIA record checked"})
     assert r.status_code == 200 and r.json()["identity"]["status"] == "verified"
 
     # documents (D2) and application (D5)
