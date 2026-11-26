@@ -1,5 +1,6 @@
 # Local development stack. `docker compose up` starts db, redis and api.
-# `docker compose --profile workers up` also starts Celery (after task B1 creates config/celery.py).
+# `docker compose --profile workers up` also starts Celery: worker (default queue), signer (one queue per role
+# wallet, concurrency 1), beat (indexer every 2 s, intent watcher, signer health, document cleanup).
 # `docker compose --profile proxy up` adds Caddy in front, as on the DigitalOcean droplet.
 services:
   db:
@@ -30,7 +31,19 @@ services:
   worker:
     profiles: ["workers"]
     build: .
-    command: celery -A config worker -l info -Q default,signer.registrar,signer.id_officer,signer.admin
+    command: celery -A config worker -l info -Q default
+    env_file: .env
+    environment:
+      DATABASE_URL: ${DATABASE_URL:-postgres://landchain:landchain@db:5432/landchain}
+      REDIS_URL: redis://redis:6379/0
+    volumes: [".:/app"]
+    extra_hosts: ["host.docker.internal:host-gateway"]
+    depends_on: [db, redis]
+
+  signer:
+    profiles: ["workers"]
+    build: .
+    command: celery -A config worker -l info -Q signer.registrar,signer.id_officer,signer.admin --concurrency 1 -n signer@%h
     env_file: .env
     environment:
       DATABASE_URL: ${DATABASE_URL:-postgres://landchain:landchain@db:5432/landchain}
@@ -48,7 +61,8 @@ services:
       DATABASE_URL: ${DATABASE_URL:-postgres://landchain:landchain@db:5432/landchain}
       REDIS_URL: redis://redis:6379/0
     volumes: [".:/app"]
-    depends_on: [redis]
+    extra_hosts: ["host.docker.internal:host-gateway"]
+    depends_on: [db, redis]
 
   caddy:
     profiles: ["proxy"]
