@@ -6,6 +6,7 @@ loads or creates the Profile. DevHeaderAuthentication lets a developer act as an
 """
 from __future__ import annotations
 
+import logging
 import uuid
 
 import jwt
@@ -14,6 +15,8 @@ from jwt import PyJWKClient
 from rest_framework import authentication, exceptions
 
 from .models import Profile
+
+log = logging.getLogger(__name__)
 
 _jwks_client: PyJWKClient | None = None
 
@@ -57,11 +60,13 @@ def decode_supabase_token(token: str) -> dict:
         alg = jwt.get_unverified_header(token).get("alg")
         if alg == "HS256":
             if not settings.SUPABASE_JWT_SECRET:
+                log.warning("Rejected a Supabase token: it is HS256 and SUPABASE_JWT_SECRET is not set")
                 _fail("TOKEN_INVALID", "Sign in again.")
             key = settings.SUPABASE_JWT_SECRET
         elif alg in ("ES256", "RS256", "EdDSA"):
             key = _jwks().get_signing_key_from_jwt(token).key
         else:
+            log.warning("Rejected a Supabase token: unsupported algorithm %s", alg)
             _fail("TOKEN_INVALID", "Sign in again.")
         claims = jwt.decode(
             token, key, algorithms=[alg],
@@ -72,9 +77,12 @@ def decode_supabase_token(token: str) -> dict:
         )
     except jwt.ExpiredSignatureError:
         _fail("TOKEN_EXPIRED", "Your session expired. Sign in again.")
-    except (jwt.PyJWTError, jwt.PyJWKClientError, ValueError):
+    except (jwt.PyJWTError, jwt.PyJWKClientError, ValueError) as e:
+        # Never log the token or the secret: the algorithm and the reason are enough to fix the setup.
+        log.warning("Rejected a Supabase token (%s): %s: %s", locals().get("alg"), type(e).__name__, e)
         _fail("TOKEN_INVALID", "Sign in again.")
     if claims.get("role") != "authenticated":
+        log.warning("Rejected a Supabase token: role is %s, not authenticated", claims.get("role"))
         _fail("TOKEN_INVALID", "Sign in again.")
     return claims
 
