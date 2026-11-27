@@ -23,7 +23,8 @@ services:
     environment:
       DATABASE_URL: ${DATABASE_URL:-postgres://landchain:landchain@db:5432/landchain}
       REDIS_URL: redis://redis:6379/0
-    volumes: [".:/app"]
+    # The contracts repo sits next to this one; sync_contracts reads its shared/ folder from there.
+    volumes: [".:/app", "../landchain-contracts:/landchain-contracts:ro"]
     ports: ["8000:8000"]
     extra_hosts: ["host.docker.internal:host-gateway"]   # reach Ganache on your machine (port 7545)
     depends_on: [db, redis]
